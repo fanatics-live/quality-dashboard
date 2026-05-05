@@ -1,0 +1,2129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quality Dashboard — 2026-04-23 to 2026-04-30</title>
+<style>
+  :root {
+    --bg: #f1f5f9; --card: #ffffff; --text: #1e293b; --muted: #64748b;
+    --border: #e2e8f0; --primary: #6366f1; --success: #059669;
+    --warning: #d97706; --danger: #dc2626; --info: #2563eb;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+
+  .header { background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); color: white; padding: 28px 40px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+  .header-left h1 { font-size: 24px; font-weight: 700; }
+  .header-left .subtitle { color: #c7d2fe; font-size: 13px; }
+  .header-right { display: flex; align-items: center; gap: 16px; }
+  .header-right .period { background: rgba(255,255,255,0.15); padding: 4px 14px; border-radius: 20px; font-size: 13px; }
+  .overall-score { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 800; border: 3px solid rgba(255,255,255,0.3); }
+
+  .container { max-width: 1280px; margin: 0 auto; padding: 24px 20px; }
+
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 28px; }
+  .kpi-grid-4 { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+  .kpi { background: var(--card); border-radius: 10px; padding: 16px 18px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); border-left: 4px solid var(--primary); }
+  .kpi .value { font-size: 32px; font-weight: 800; line-height: 1.1; }
+  .kpi .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); margin-top: 2px; }
+  .kpi .detail { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .kpi.danger { border-left-color: var(--danger); }
+  .kpi.warning { border-left-color: var(--warning); }
+  .kpi.success { border-left-color: var(--success); }
+  .kpi.info { border-left-color: var(--info); }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
+  @media (max-width: 768px) { .grid-2 { grid-template-columns: 1fr; } }
+
+  section { background: var(--card); border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  section h2 { font-size: 17px; font-weight: 700; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 2px solid var(--border); }
+  section h3 { font-size: 14px; font-weight: 600; margin: 14px 0 8px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead { background: #f8fafc; }
+  th { text-align: left; padding: 8px 10px; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; color: var(--muted); border-bottom: 2px solid var(--border); }
+  td { padding: 8px 10px; border-bottom: 1px solid var(--border); }
+  tr:last-child td { border-bottom: none; }
+  tr:hover { background: #f8fafc; }
+  a { color: var(--primary); text-decoration: none; font-weight: 600; }
+  a:hover { text-decoration: underline; }
+  a.status-red { color: var(--danger); }
+  a.status-yellow { color: var(--warning); }
+  a.status-green { color: var(--success); }
+  .zero { color: #d1d5db; }
+
+  .bug-table td { font-size: 12px; }
+  .tag { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+  .tag-red { background: #fef2f2; color: #dc2626; }
+  .tag-blue { background: #eff6ff; color: #2563eb; }
+  .tag-gray { background: #f1f5f9; color: #64748b; }
+
+  .bar-row { display: flex; align-items: center; margin-bottom: 6px; }
+  .bar-label { width: 110px; font-size: 12px; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bar-track { display: flex; align-items: center; flex: 1; }
+  .bar-fill { height: 20px; border-radius: 4px; transition: width 0.3s; }
+  .bar-value { font-size: 12px; font-weight: 600; margin-left: 8px; }
+
+  .status-red { color: var(--danger); font-weight: 700; }
+  .status-yellow { color: var(--warning); font-weight: 700; }
+  .status-green { color: var(--success); font-weight: 700; }
+  .empty { color: var(--muted); font-style: italic; }
+
+  /* Grade badges */
+  .grade-badge { width: 52px; height: 52px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: 900; color: white; flex-shrink: 0; letter-spacing: -0.5px; }
+  .grade-badge-sm { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 17px; font-weight: 900; color: white; flex-shrink: 0; }
+  .overall-grade { width: 56px; height: 56px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 30px; font-weight: 900; color: white; border: 3px solid rgba(255,255,255,0.3); }
+  .grade-a { background: #059669; }
+  .grade-b { background: #16a34a; }
+  .grade-c { background: #d97706; }
+  .grade-d { background: #ea580c; }
+  .grade-e { background: #dc2626; }
+
+  /* Vertical cards grid */
+  .verticals-label { font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); font-weight: 600; margin-bottom: 12px; }
+  .verticals-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; margin-bottom: 28px; }
+  .vertical-card { background: var(--card); border-radius: 10px; padding: 16px 18px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); cursor: pointer; transition: transform 0.15s, box-shadow 0.15s; border-left: 4px solid var(--primary); }
+  .vertical-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+  .vc-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .vc-name { font-size: 15px; font-weight: 700; }
+  .vc-stats { display: flex; gap: 12px; font-size: 12px; color: var(--muted); }
+  .vc-subteams { font-size: 11px; color: var(--muted); margin-top: 6px; }
+
+  /* Page navigation */
+  .back-btn { background: none; border: 1px solid var(--border); padding: 6px 14px; border-radius: 6px; font-size: 13px; cursor: pointer; margin-bottom: 16px; color: var(--text); }
+  .back-btn:hover { background: #f8fafc; }
+  .page-header { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
+  .page-header h2 { font-size: 22px; margin: 0; border: none; padding: 0; }
+
+  /* Council */
+  .council { border-top: 4px solid var(--primary); }
+  .council-meta { display: flex; gap: 24px; flex-wrap: wrap; margin-bottom: 14px; padding: 10px 14px; background: #f8fafc; border-radius: 8px; font-size: 13px; }
+  .council-meta span { color: var(--muted); }
+  .executive-summary { background: #eef2ff; border-radius: 8px; padding: 14px 18px; margin-bottom: 14px; }
+  .executive-summary h3 { margin-top: 0; color: #4338ca; }
+  .council-detail { font-size: 13px; line-height: 1.7; }
+  .council-detail ul { margin: 6px 0; padding-left: 18px; }
+  .council-detail li { margin-bottom: 3px; }
+  .caveats { background: #fffbeb; border-radius: 8px; padding: 10px 14px; margin-top: 14px; font-size: 12px; }
+  .caveats h3 { color: var(--warning); margin-top: 0; }
+
+  /* Donut */
+  .donut-row { display: flex; align-items: center; gap: 20px; }
+  .donut-legend { font-size: 12px; }
+  .donut-legend div { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+
+  .footer { text-align: center; padding: 20px; color: var(--muted); font-size: 11px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <h1>Quality Dashboard</h1>
+    <div class="subtitle">Weekly Quality Report — Fanatics Live</div>
+  </div>
+  <div class="header-right">
+    <div class="period">2026-04-23 &rarr; 2026-04-30</div>
+    <div class="overall-grade grade-c">C</div>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- ═══ HOME PAGE ═══ -->
+  <div id="page-home">
+
+    <!-- KPIs -->
+    <div class="kpi-grid">
+      <div class="kpi danger">
+        <div class="value">352</div>
+        <div class="label">Total Bugs</div>
+        <div class="detail">70 triage · 183 open · 99 closed</div>
+      </div>
+      <div class="kpi danger">
+        <div class="value">46</div>
+        <div class="label">Regressions</div>
+        <div class="detail">45 progressions</div>
+      </div>
+      <div class="kpi info">
+        <div class="value">0</div>
+        <div class="label">Incidents</div>
+        <div class="detail">MTTR: N/A</div>
+      </div>
+      <div class="kpi danger">
+        <div class="value">8%</div>
+        <div class="label">Automation Coverage</div>
+        <div class="detail">867 / 10865</div>
+      </div>
+      <div class="kpi info">
+        <div class="value">100%</div>
+        <div class="label">Pass Rate</div>
+        <div class="detail">14 runs</div>
+      </div>
+      <div class="kpi info">
+        <div class="value">44h</div>
+        <div class="label">Bug MTTR</div>
+        <div class="detail">Mean time to resolve</div>
+      </div>
+    </div>
+
+    <!-- Verticals -->
+    <div class="verticals-label">Quality by Vertical — click for details</div>
+    <div class="verticals-grid">
+      <div class="vertical-card" onclick="showPage('live-breaking')">
+      <div class="vc-header">
+        <span class="vc-name">Live Breaking</span>
+        <span class="grade-badge-sm grade-c">C</span>
+      </div>
+      <div class="vc-stats">
+        <span>119 bugs</span>
+        <span class="status-red">54 open</span>
+        <span>10 regr.</span>
+      </div>
+      <div class="vc-subteams">5 sub-teams</div>
+    </div><div class="vertical-card" onclick="showPage('marketplace')">
+      <div class="vc-header">
+        <span class="vc-name">Marketplace</span>
+        <span class="grade-badge-sm grade-d">D</span>
+      </div>
+      <div class="vc-stats">
+        <span>107 bugs</span>
+        <span class="status-red">73 open</span>
+        <span>11 regr.</span>
+      </div>
+      <div class="vc-subteams">2 sub-teams</div>
+    </div><div class="vertical-card" onclick="showPage('instant-rips')">
+      <div class="vc-header">
+        <span class="vc-name">Instant Rips</span>
+        <span class="grade-badge-sm grade-c">C</span>
+      </div>
+      <div class="vc-stats">
+        <span>50 bugs</span>
+        <span class="status-red">17 open</span>
+        <span>6 regr.</span>
+      </div>
+      <div class="vc-subteams">5 sub-teams</div>
+    </div><div class="vertical-card" onclick="showPage('client')">
+      <div class="vc-header">
+        <span class="vc-name">Client</span>
+        <span class="grade-badge-sm grade-d">D</span>
+      </div>
+      <div class="vc-stats">
+        <span>22 bugs</span>
+        <span class="status-red">19 open</span>
+        <span>10 regr.</span>
+      </div>
+      <div class="vc-subteams">4 sub-teams</div>
+    </div><div class="vertical-card" onclick="showPage('collecting')">
+      <div class="vc-header">
+        <span class="vc-name">Collecting</span>
+        <span class="grade-badge-sm grade-c">C</span>
+      </div>
+      <div class="vc-stats">
+        <span>21 bugs</span>
+        <span class="status-red">8 open</span>
+        <span>4 regr.</span>
+      </div>
+      <div class="vc-subteams">3 sub-teams</div>
+    </div><div class="vertical-card" onclick="showPage('scan-tech')">
+      <div class="vc-header">
+        <span class="vc-name">Scan Tech</span>
+        <span class="grade-badge-sm grade-b">B</span>
+      </div>
+      <div class="vc-stats">
+        <span>18 bugs</span>
+        <span class="status-yellow">4 open</span>
+        <span>0 regr.</span>
+      </div>
+      <div class="vc-subteams">1 sub-team</div>
+    </div><div class="vertical-card" onclick="showPage('topps')">
+      <div class="vc-header">
+        <span class="vc-name">Topps</span>
+        <span class="grade-badge-sm grade-d">D</span>
+      </div>
+      <div class="vc-stats">
+        <span>6 bugs</span>
+        <span class="status-yellow">5 open</span>
+        <span>4 regr.</span>
+      </div>
+      <div class="vc-subteams">1 sub-team</div>
+    </div><div class="vertical-card" onclick="showPage('qa')">
+      <div class="vc-header">
+        <span class="vc-name">QA</span>
+        <span class="grade-badge-sm grade-b">B</span>
+      </div>
+      <div class="vc-stats">
+        <span>5 bugs</span>
+        <span class="status-green">1 open</span>
+        <span>1 regr.</span>
+      </div>
+      <div class="vc-subteams">1 sub-team</div>
+    </div><div class="vertical-card" onclick="showPage('platform')">
+      <div class="vc-header">
+        <span class="vc-name">Platform</span>
+        <span class="grade-badge-sm grade-a">A</span>
+      </div>
+      <div class="vc-stats">
+        <span>3 bugs</span>
+        <span class="status-green">1 open</span>
+        <span>0 regr.</span>
+      </div>
+      <div class="vc-subteams">1 sub-team</div>
+    </div><div class="vertical-card" onclick="showPage('collect-app')">
+      <div class="vc-header">
+        <span class="vc-name">Collect App</span>
+        <span class="grade-badge-sm grade-c">C</span>
+      </div>
+      <div class="vc-stats">
+        <span>1 bugs</span>
+        <span class="status-green">1 open</span>
+        <span>0 regr.</span>
+      </div>
+      <div class="vc-subteams">1 sub-team</div>
+    </div>
+    </div>
+
+    <!-- Charts row -->
+    <div class="grid-2">
+      <section>
+        <h2>Bug Classification</h2>
+        <div class="donut-row">
+          <svg width="110" height="110" viewBox="0 0 110 110"><circle cx="55" cy="55" r="40" fill="none" stroke="#dc2626" stroke-width="14" stroke-dasharray="32.843923196620565 218.4834890905629" stroke-dashoffset="0" transform="rotate(-90 55 55)"/><circle cx="55" cy="55" r="40" fill="none" stroke="#2563eb" stroke-width="14" stroke-dasharray="32.129924866259245 219.1974874209242" stroke-dashoffset="-32.843923196620565" transform="rotate(-90 55 55)"/><circle cx="55" cy="55" r="40" fill="none" stroke="#9ca3af" stroke-width="14" stroke-dasharray="186.35356422430362 64.97384806287982" stroke-dashoffset="-64.97384806287981" transform="rotate(-90 55 55)"/><text x="55" y="55" text-anchor="middle" dominant-baseline="central" font-size="18" font-weight="700">352</text></svg>
+          <div class="donut-legend">
+            <div><span class="legend-dot" style="background:#dc2626"></span>Regression: 46</div>
+            <div><span class="legend-dot" style="background:#2563eb"></span>Progression: 45</div>
+            <div><span class="legend-dot" style="background:#9ca3af"></span>Unclassified: 261</div>
+          </div>
+        </div>
+      </section>
+      <section>
+        <h2>Bugs by Environment</h2>
+        <div class="bar-row"><span class="bar-label">unspecified</span><div class="bar-track"><div class="bar-fill" style="width:100%;background:#6366f1"></div><span class="bar-value">261</span></div></div><div class="bar-row"><span class="bar-label">development</span><div class="bar-track"><div class="bar-fill" style="width:26%;background:#6366f1"></div><span class="bar-value">69</span></div></div><div class="bar-row"><span class="bar-label">production</span><div class="bar-track"><div class="bar-fill" style="width:8%;background:#6366f1"></div><span class="bar-value">22</span></div></div>
+      </section>
+    </div>
+
+    <div class="grid-2">
+      <section>
+        <h2>Bugs by Severity</h2>
+        <div class="bar-row"><span class="bar-label">low</span><div class="bar-track"><div class="bar-fill" style="width:100%;background:#ea580c"></div><span class="bar-value">183</span></div></div><div class="bar-row"><span class="bar-label">medium</span><div class="bar-track"><div class="bar-fill" style="width:47%;background:#ea580c"></div><span class="bar-value">86</span></div></div><div class="bar-row"><span class="bar-label">high</span><div class="bar-track"><div class="bar-fill" style="width:40%;background:#ea580c"></div><span class="bar-value">74</span></div></div><div class="bar-row"><span class="bar-label">critical</span><div class="bar-track"><div class="bar-fill" style="width:5%;background:#ea580c"></div><span class="bar-value">9</span></div></div>
+      </section>
+      <section>
+        <h2>Incidents by Severity</h2>
+        <p class='empty'>No incident data</p>
+      </section>
+    </div>
+
+    <!-- Automation -->
+    <section>
+      <h2>Test Automation (QASE.io)</h2>
+      <table>
+        <thead><tr><th>Project</th><th>Total Cases</th><th>Automated</th><th>Coverage</th><th>Pass Rate</th><th>Runs</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Topps</strong></td><td>697</td><td>156</td><td><span class="status-red">22%</span></td><td><span class="status-green">100%</span></td><td>10</td></tr><tr><td><strong>Marketplace</strong></td><td>2303</td><td>297</td><td><span class="status-red">13%</span></td><td><span class="status-green">98%</span></td><td>1</td></tr><tr><td><strong>Instant Rips</strong></td><td>2077</td><td>150</td><td><span class="status-red">7%</span></td><td><span class="status-green">100%</span></td><td>10</td></tr><tr><td><strong>Collection</strong></td><td>1388</td><td>20</td><td><span class="status-red">1%</span></td><td><span class="">N/A</span></td><td>0</td></tr><tr><td><strong>Growth + Apps</strong></td><td>915</td><td>37</td><td><span class="status-red">4%</span></td><td><span class="status-yellow">85%</span></td><td>10</td></tr><tr><td><strong>Live Breaking</strong></td><td>3485</td><td>207</td><td><span class="status-red">6%</span></td><td><span class="status-green">100%</span></td><td>2</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Council -->
+    
+
+  </div>
+
+  <!-- ═══ VERTICAL DETAIL PAGES ═══ -->
+  
+  <div class="page" id="page-live-breaking" style="display:none">
+    <button class="back-btn" onclick="showHome()">&larr; Back to Overview</button>
+    <div class="page-header">
+      <h2>Live Breaking</h2>
+      <div class="grade-badge grade-c">C</div>
+    </div>
+
+    <div class="kpi-grid kpi-grid-4">
+      <div class="kpi"><div class="value">119</div><div class="label">Total Bugs</div><div class="detail">10 triage · 54 open</div></div>
+      <div class="kpi danger"><div class="value">10</div><div class="label">Regressions</div></div>
+      <div class="kpi info"><div class="value">3</div><div class="label">Progressions</div></div>
+      <div class="kpi"><div class="value">5</div><div class="label">Sub-teams</div></div>
+    </div>
+
+    <section>
+      <h3>Bug Breakdown by Sub-team</h3>
+      <table>
+        <thead><tr><th>Sub-team</th><th>Total</th><th>Triage</th><th>Open</th><th>Regr.</th><th>Regr. %</th></tr></thead>
+        <tbody><tr>
+        <td>(main)</td>
+        <td><a href="https://linear.app/fanaticscollect/team/LB/all" target="_blank">5</a></td>
+        <td><a href="https://linear.app/fanaticscollect/team/LB/triage" target="_blank" class="status-yellow">1</a></td>
+        <td><a href="https://linear.app/fanaticscollect/team/LB/active" target="_blank" class="status-green">2</a></td>
+        <td><a href="https://linear.app/fanaticscollect/team/LB/all?label=Regression%20bug" target="_blank" class="status-red">3</a></td>
+        <td><span class="status-red">60%</span></td>
+      </tr><tr>
+        <td>Backend</td>
+        <td><a href="https://linear.app/fanaticscollect/team/LBB/all" target="_blank">69</a></td>
+        <td><a href="https://linear.app/fanaticscollect/team/LBB/triage" target="_blank" class="status-yellow">2</a></td>
+        <td><a href="https://linear.app/fanaticscollect/team/LBB/active" target="_blank" class="status-red">28</a></td>
+        <td><span class="zero">0</span></td>
+        <td><span class="">0%</span></td>
+      </tr><tr>
+        <td>IOS</td>
+        <td><a href="https://linear.app/fanaticscollect/team/LBI/all" target="_blank">9</a></td>
+        <td><a href="https://linear.app/fanaticscollect/team/LBI/triage" target="_blank" class="status-yellow">3</a></td>
+        <td><a href="https://linear.app/fanaticscollect/team/LBI/active" target="_blank" class="status-yellow">4</a></td>
+        <td><a href="https://linear.app/fanaticscollect/team/LBI/all?label=Regression%20bug" target="_blank" class="status-red">5</a></td>
+        <td><span class="status-red">56%</span></td>
+      </tr><tr>
+        <td>Android</td>
+        <td><a href="https://linear.app/fanaticscollect/team/LBA/all" target="_blank">2</a></td>
+        <td><a href="https://linear.app/fanaticscollect/team/LBA/triage" target="_blank" class="status-yellow">1</a></td>
+        <td><a href="https://linear.app/fanaticscollect/team/LBA/active" target="_blank" class="status-green">1</a></td>
+        <td><a href="https://linear.app/fanaticscollect/team/LBA/all?label=Regression%20bug" target="_blank" class="status-red">2</a></td>
+        <td><span class="status-red">100%</span></td>
+      </tr><tr>
+        <td>Web</td>
+        <td><a href="https://linear.app/fanaticscollect/team/LBW/all" target="_blank">34</a></td>
+        <td><a href="https://linear.app/fanaticscollect/team/LBW/triage" target="_blank" class="status-yellow">3</a></td>
+        <td><a href="https://linear.app/fanaticscollect/team/LBW/active" target="_blank" class="status-red">19</a></td>
+        <td><span class="zero">0</span></td>
+        <td><span class="">0%</span></td>
+      </tr></tbody>
+      </table>
+    </section>
+
+    <div class="grid-2">
+      <section>
+        <h3>By Environment</h3>
+        <div class="bar-row"><span class="bar-label">unspecified</span><div class="bar-track"><div class="bar-fill" style="width:100%;background:#6366f1"></div><span class="bar-value">113</span></div></div><div class="bar-row"><span class="bar-label">development</span><div class="bar-track"><div class="bar-fill" style="width:3%;background:#6366f1"></div><span class="bar-value">3</span></div></div><div class="bar-row"><span class="bar-label">production</span><div class="bar-track"><div class="bar-fill" style="width:3%;background:#6366f1"></div><span class="bar-value">3</span></div></div>
+      </section>
+      <section>
+        <h3>By Severity</h3>
+        <div class="bar-row"><span class="bar-label">low</span><div class="bar-track"><div class="bar-fill" style="width:100%;background:#ea580c"></div><span class="bar-value">67</span></div></div><div class="bar-row"><span class="bar-label">medium</span><div class="bar-track"><div class="bar-fill" style="width:36%;background:#ea580c"></div><span class="bar-value">24</span></div></div><div class="bar-row"><span class="bar-label">high</span><div class="bar-track"><div class="bar-fill" style="width:34%;background:#ea580c"></div><span class="bar-value">23</span></div></div><div class="bar-row"><span class="bar-label">critical</span><div class="bar-track"><div class="bar-fill" style="width:7%;background:#ea580c"></div><span class="bar-value">5</span></div></div>
+      </section>
+    </div>
+
+    <section>
+      <h3>Recent Bugs</h3>
+      <table class="bug-table">
+        <thead><tr><th>Title</th><th>Sub-team</th><th>Type</th><th>Env</th><th>Severity</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/LBB-2545/spot-name-is-incorrectly-shown-in-the-shipment-drawer-prepare-tab" target="_blank">Spot name is incorrectly shown in the shipment drawer (Prepare tab)...</a></td>
+              <td>Backend</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#ea580c">high</span></td>
+              <td>Ready To Do</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/LBI-380/fix-invisible-my-spots-pill-button-on-ios-17-18-pre-ios-26" target="_blank">Fix invisible My Spots pill button on iOS 17-18 (pre-iOS 26)</a></td>
+              <td>IOS</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>In Review</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/LBI-373/content-card-at-top-of-live-home-feed-shows-as-empty-black-rectangle" target="_blank">Content card at top of Live home feed shows as empty black rectangl...</a></td>
+              <td>IOS</td>
+              <td><span class="tag tag-blue">progression</span></td>
+              <td>development</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Release Ready</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/LBI-371/app-crashes-on-launch-due-to-internal-state-conflict" target="_blank">App crashes on launch due to internal state conflict</a></td>
+              <td>IOS</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Ready for QA</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/LB-1810/chatmute-option-mutes-only-shields-messages-from-breaker" target="_blank">Chat/Mute option mutes only shields messages from breaker</a></td>
+              <td>(main)</td>
+              <td><span class="tag tag-red">regression</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#ca8a04">medium</span></td>
+              <td>Triage</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/LBI-366/add-border-and-glow-effects-to-livestream-modules-on-ios-26" target="_blank">Add border and glow effects to livestream modules on iOS 26+</a></td>
+              <td>IOS</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Ready for design QA</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/LB-1808/for-shipments-with-spend-above-dollar750-the-signature-toggle-should" target="_blank">For shipments with spend above $750, the Signature toggle should be...</a></td>
+              <td>(main)</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>development</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Ready To Do</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/LBA-191/android-the-state-of-shop-button-is-still-on-uncovered-after-change" target="_blank">[Android] The State of Shop Button is Still on Uncovered After Chan...</a></td>
+              <td>Android</td>
+              <td><span class="tag tag-red">regression</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Triage</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/LBI-369/ios-the-state-of-shop-button-is-still-on-uncovered-after-change" target="_blank">[iOS] The State of Shop Button is Still on Uncovered After Change D...</a></td>
+              <td>IOS</td>
+              <td><span class="tag tag-red">regression</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Triage</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/LBI-368/ios-there-is-no-error-message-when-bid-using-uncovered-area-address" target="_blank">[iOS] There is No Error Message when Bid Using Uncovered Area Address</a></td>
+              <td>IOS</td>
+              <td><span class="tag tag-red">regression</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Triage</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/LB-1807/label-generated-from-shipment-drawer-ignores-stream-filter-and" target="_blank">Label generated from shipment drawer ignores stream filter and gene...</a></td>
+              <td>(main)</td>
+              <td><span class="tag tag-blue">progression</span></td>
+              <td>development</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Ready To Do</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/LB-1805/uk-shipping-emails-directing-to-usps" target="_blank">UK Shipping Emails Directing to USPS</a></td>
+              <td>(main)</td>
+              <td><span class="tag tag-red">regression</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#ca8a04">medium</span></td>
+              <td>Duplicate</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/LBA-190/android-app-crashes-when-opening-specific-show-from-home-feed" target="_blank">[Android] App crashes when opening specific show from home feed</a></td>
+              <td>Android</td>
+              <td><span class="tag tag-red">regression</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#ea580c">high</span></td>
+              <td>QA Verified</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/LBI-367/cant-seem-to-pull-chat-back-down" target="_blank">Can’t seem to pull chat back down</a></td>
+              <td>IOS</td>
+              <td><span class="tag tag-red">regression</span></td>
+              <td>production</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Triage</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/LBI-361/chat-message-not-trimming-extra-spaces-for-sender" target="_blank">Chat Message Not Trimming Extra Spaces for Sender</a></td>
+              <td>IOS</td>
+              <td><span class="tag tag-red">regression</span></td>
+              <td>production</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>QA Verified</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/LBI-360/send-chat-button-overlaps-scroll-button-in-live-stream-ui" target="_blank">Send Chat Button Overlaps Scroll Button in Live Stream UI</a></td>
+              <td>IOS</td>
+              <td><span class="tag tag-red">regression</span></td>
+              <td>production</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Release Ready</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/LBW-1935/when-order-is-the-manifest-shipment-is-refunded-user-should-see" target="_blank">When order is the manifest shipment is refunded – user should see “...</a></td>
+              <td>Web</td>
+              <td><span class="tag tag-blue">progression</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>In Review</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/LBB-2469/fix-n1-in-endstreammutation" target="_blank">Fix N+1 in endStreamMutation</a></td>
+              <td>Backend</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#ca8a04">medium</span></td>
+              <td>Backlog</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/LB-1802/bug-swiping-back-from-shop-profile-launches-search" target="_blank">Bug -- Swiping Back From Shop Profile Launches Search</a></td>
+              <td>(main)</td>
+              <td><span class="tag tag-red">regression</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#ca8a04">medium</span></td>
+              <td>Duplicate</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/LBB-2546/backend-search-results-for-shows-should-have-same-order-when-client" target="_blank">Backend: Search results for Shows should have same order when clien...</a></td>
+              <td>Backend</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Triage</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/LBW-1972/enable-rum-on-live-web" target="_blank">Enable RUM on live-web</a></td>
+              <td>Web</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#ca8a04">medium</span></td>
+              <td>Ready To Do</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/LBW-1971/investigate-whip-streaming-setup-issue-in-liveos" target="_blank">Investigate WHIP streaming setup issue in LiveOS</a></td>
+              <td>Web</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Triage</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/LBB-2544/off-platform-shipment-should-allow-not-ready-to-ship-orders-to-be" target="_blank">Off-platform shipment should allow not ready to ship orders to be s...</a></td>
+              <td>Backend</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#ea580c">high</span></td>
+              <td>Ready To Do</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/LBW-1970/manifest-drawer-order-selection-persists-across-shipments" target="_blank">Manifest drawer order selection persists across shipments</a></td>
+              <td>Web</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>In Progress</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/LBW-1969/future-livestream-playback-auto-recovery-retries-rollout-criteria" target="_blank">[Future] Livestream playback: auto-recovery retries + rollout criteria</a></td>
+              <td>Web</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Backlog</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/LBB-2542/add-log-in-case-of-skipped-outbox-sync-on-livestreamended" target="_blank">Add log in case of skipped outbox sync on LiveStreamEnded</a></td>
+              <td>Backend</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#ca8a04">medium</span></td>
+              <td>Release Ready</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/LBW-1968/investigate-escalating-livestream-failed-to-play-error-volume-in-live" target="_blank">Investigate escalating livestream_failed_to_play error volume in li...</a></td>
+              <td>Web</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Ready for QA</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/LBW-1967/generating-labels-from-shipment-orders-drawer-with-stream-filter" target="_blank">Generating labels from shipment orders drawer with stream filter ap...</a></td>
+              <td>Web</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#ea580c">high</span></td>
+              <td>In Review</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/LBW-1966/cache-unauthenticated-user-queries-on-homepage" target="_blank">Cache unauthenticated user queries on homepage</a></td>
+              <td>Web</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#ca8a04">medium</span></td>
+              <td>Ready for QA</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/LBB-2541/spots-from-the-same-buyer-and-stream-are-not-grouped-together-for" target="_blank">Spots from the same buyer and stream are not grouped together for s...</a></td>
+              <td>Backend</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#ca8a04">medium</span></td>
+              <td>Ready for QA</td>
+            </tr>
+        </tbody>
+      </table>
+      <p class="detail" style="margin-top:8px">Showing 30 of 119 bugs</p>
+    </section>
+  </div>
+  <div class="page" id="page-marketplace" style="display:none">
+    <button class="back-btn" onclick="showHome()">&larr; Back to Overview</button>
+    <div class="page-header">
+      <h2>Marketplace</h2>
+      <div class="grade-badge grade-d">D</div>
+    </div>
+
+    <div class="kpi-grid kpi-grid-4">
+      <div class="kpi"><div class="value">107</div><div class="label">Total Bugs</div><div class="detail">18 triage · 73 open</div></div>
+      <div class="kpi danger"><div class="value">11</div><div class="label">Regressions</div></div>
+      <div class="kpi info"><div class="value">13</div><div class="label">Progressions</div></div>
+      <div class="kpi"><div class="value">2</div><div class="label">Sub-teams</div></div>
+    </div>
+
+    <section>
+      <h3>Bug Breakdown by Sub-team</h3>
+      <table>
+        <thead><tr><th>Sub-team</th><th>Total</th><th>Triage</th><th>Open</th><th>Regr.</th><th>Regr. %</th></tr></thead>
+        <tbody><tr>
+        <td>(main)</td>
+        <td><a href="https://linear.app/fanaticscollect/team/MKT/all" target="_blank">59</a></td>
+        <td><a href="https://linear.app/fanaticscollect/team/MKT/triage" target="_blank" class="status-yellow">6</a></td>
+        <td><a href="https://linear.app/fanaticscollect/team/MKT/active" target="_blank" class="status-red">47</a></td>
+        <td><a href="https://linear.app/fanaticscollect/team/MKT/all?label=Regression%20bug" target="_blank" class="status-red">9</a></td>
+        <td><span class="">15%</span></td>
+      </tr><tr>
+        <td>Product</td>
+        <td><a href="https://linear.app/fanaticscollect/team/MKTPR/all" target="_blank">48</a></td>
+        <td><a href="https://linear.app/fanaticscollect/team/MKTPR/triage" target="_blank" class="status-yellow">12</a></td>
+        <td><a href="https://linear.app/fanaticscollect/team/MKTPR/active" target="_blank" class="status-red">26</a></td>
+        <td><a href="https://linear.app/fanaticscollect/team/MKTPR/all?label=Regression%20bug" target="_blank" class="status-red">2</a></td>
+        <td><span class="">4%</span></td>
+      </tr></tbody>
+      </table>
+    </section>
+
+    <div class="grid-2">
+      <section>
+        <h3>By Environment</h3>
+        <div class="bar-row"><span class="bar-label">unspecified</span><div class="bar-track"><div class="bar-fill" style="width:100%;background:#6366f1"></div><span class="bar-value">78</span></div></div><div class="bar-row"><span class="bar-label">development</span><div class="bar-track"><div class="bar-fill" style="width:27%;background:#6366f1"></div><span class="bar-value">21</span></div></div><div class="bar-row"><span class="bar-label">production</span><div class="bar-track"><div class="bar-fill" style="width:10%;background:#6366f1"></div><span class="bar-value">8</span></div></div>
+      </section>
+      <section>
+        <h3>By Severity</h3>
+        <div class="bar-row"><span class="bar-label">low</span><div class="bar-track"><div class="bar-fill" style="width:100%;background:#ea580c"></div><span class="bar-value">45</span></div></div><div class="bar-row"><span class="bar-label">high</span><div class="bar-track"><div class="bar-fill" style="width:82%;background:#ea580c"></div><span class="bar-value">37</span></div></div><div class="bar-row"><span class="bar-label">medium</span><div class="bar-track"><div class="bar-fill" style="width:49%;background:#ea580c"></div><span class="bar-value">22</span></div></div><div class="bar-row"><span class="bar-label">critical</span><div class="bar-track"><div class="bar-fill" style="width:7%;background:#ea580c"></div><span class="bar-value">3</span></div></div>
+      </section>
+    </div>
+
+    <section>
+      <h3>Recent Bugs</h3>
+      <table class="bug-table">
+        <thead><tr><th>Title</th><th>Sub-team</th><th>Type</th><th>Env</th><th>Severity</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/MKTPR-955/tca-marketplace-loading-icon-bigger-than-expected-when-user-scrolls-to" target="_blank">TCA Marketplace: Loading icon bigger than expected when user scroll...</a></td>
+              <td>Product</td>
+              <td><span class="tag tag-blue">progression</span></td>
+              <td>development</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Triage</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/MKTPR-954/tca-marketplace-add-to-cart-button-is-displayed-for-sold-items-on-srp" target="_blank">TCA Marketplace: Add to cart button is displayed for sold items on SRP</a></td>
+              <td>Product</td>
+              <td><span class="tag tag-blue">progression</span></td>
+              <td>development</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Triage</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/MKTPR-953/tca-marketplace-sorting-option-isnt-changed-to-default-after-changing" target="_blank">TCA Marketplace: Sorting option isn't changed to default after chan...</a></td>
+              <td>Product</td>
+              <td><span class="tag tag-blue">progression</span></td>
+              <td>development</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Triage</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/MKTPR-952/tca-marketplace-incorrect-sorting-options-and-default-sorting-when" target="_blank">TCA Marketplace: Incorrect sorting options and default sorting when...</a></td>
+              <td>Product</td>
+              <td><span class="tag tag-blue">progression</span></td>
+              <td>development</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Triage</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/MKTPR-949/tca-marketplace-different-behaviour-for-saving-search-on-no-exact" target="_blank">TCA Marketplace: Different behaviour for saving search on No exact ...</a></td>
+              <td>Product</td>
+              <td><span class="tag tag-blue">progression</span></td>
+              <td>development</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Triage</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/MKTPR-948/tca-marketplace-0-results-text-is-displayed-on-no-exact-matches-found" target="_blank">TCA Marketplace: '0 results' text is displayed on No exact matches ...</a></td>
+              <td>Product</td>
+              <td><span class="tag tag-blue">progression</span></td>
+              <td>development</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Triage</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/MKTPR-947/tca-marketplace-recent-search-is-displayed-for-guest-user" target="_blank">TCA Marketplace: Recent search is displayed for guest user</a></td>
+              <td>Product</td>
+              <td><span class="tag tag-blue">progression</span></td>
+              <td>development</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Triage</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/MKTPR-946/tca-marketplace-sold-filter-doesnt-return-any-results" target="_blank">TCA Marketplace: Sold filter doesn't return any results</a></td>
+              <td>Product</td>
+              <td><span class="tag tag-blue">progression</span></td>
+              <td>development</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Triage</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/MKTPR-945/tca-marketplace-written-results-count-and-listings-count-are-different" target="_blank">TCA Marketplace: Written results count and listings count are diffe...</a></td>
+              <td>Product</td>
+              <td><span class="tag tag-blue">progression</span></td>
+              <td>development</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Triage</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/MKTPR-944/tca-marketplace-suggestions-dont-return-correctly-if-user-enters-year" target="_blank">TCA Marketplace: Suggestions don't return correctly if user enters ...</a></td>
+              <td>Product</td>
+              <td><span class="tag tag-blue">progression</span></td>
+              <td>development</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Triage</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/MKTPR-943/tca-marketplace-full-quantity-of-results-is-displayed-on-srp-instead" target="_blank">TCA Marketplace: Full quantity of results is displayed on SRP inste...</a></td>
+              <td>Product</td>
+              <td><span class="tag tag-blue">progression</span></td>
+              <td>development</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Triage</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/MKTPR-941/watchlist-the-offer-state-label-is-not-displayed-in-ended-section" target="_blank">[Watchlist] : the offer state label is not displayed in Ended section</a></td>
+              <td>Product</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>development</td>
+              <td><span style="color:#ca8a04">medium</span></td>
+              <td>In Review</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/MKT-2555/androidlive-auctions-are-shown-at-the-end-of-the-list-when-selecting" target="_blank">[Android]`Live` auctions are shown at the end of the list when sele...</a></td>
+              <td>(main)</td>
+              <td><span class="tag tag-red">regression</span></td>
+              <td>production</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Todo</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/MKT-2554/selling-the-items-are-duplicated-after-re-listing" target="_blank">[Selling] : the items are duplicated after re-listing</a></td>
+              <td>(main)</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>production</td>
+              <td><span style="color:#ea580c">high</span></td>
+              <td>Triage</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/MKT-2552/marketplace-listings-duplicated" target="_blank">Marketplace_Listings duplicated</a></td>
+              <td>(main)</td>
+              <td><span class="tag tag-red">regression</span></td>
+              <td>production</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Triage</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/MKT-2551/marketplace-filters-baseball-filters-shows-pokemon-cards-as-well" target="_blank">Marketplace Filters_Baseball filters shows Pokemon cards as well</a></td>
+              <td>(main)</td>
+              <td><span class="tag tag-red">regression</span></td>
+              <td>production</td>
+              <td><span style="color:#ca8a04">medium</span></td>
+              <td>Triage</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/MKT-2544/colouring-issue-regarding-the-notification-screen-when-a-user-clicks" target="_blank">Colouring issue regarding the notification screen when a user click...</a></td>
+              <td>(main)</td>
+              <td><span class="tag tag-blue">progression</span></td>
+              <td>development</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Done</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/MKT-2543/v3-manual-payment-cannot-be-cancelled-in-retool" target="_blank">[V3] : Manual payment cannot be cancelled in Retool</a></td>
+              <td>(main)</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>development</td>
+              <td><span style="color:#ea580c">high</span></td>
+              <td>In Review</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/MKT-2542/dark-mode-light-screen-with-black-section-is-displayed-after-creating" target="_blank">Dark mode: Light screen with black section is displayed after creat...</a></td>
+              <td>(main)</td>
+              <td><span class="tag tag-red">regression</span></td>
+              <td>development</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Triage</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/MKT-2561/shows-sold-results-item-i-bought-when-searching-active-listings" target="_blank">Shows sold results (item I bought) when searching active listings</a></td>
+              <td>(main)</td>
+              <td><span class="tag tag-red">regression</span></td>
+              <td>production</td>
+              <td><span style="color:#ca8a04">medium</span></td>
+              <td>Ready for Grooming</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/MKT-2564/scrolling-page-is-slow-and-laggy" target="_blank">Scrolling page is slow and laggy</a></td>
+              <td>(main)</td>
+              <td><span class="tag tag-red">regression</span></td>
+              <td>production</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Ready for QA</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/MKT-2563/super-slow-when-typing-search-queries-app-starts-crawling" target="_blank">Super slow when typing search queries; app starts crawling</a></td>
+              <td>(main)</td>
+              <td><span class="tag tag-red">regression</span></td>
+              <td>production</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>In Review</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/MKT-2562/can-navigate-back-out-of-this-view" target="_blank">Can navigate back out of this view</a></td>
+              <td>(main)</td>
+              <td><span class="tag tag-red">regression</span></td>
+              <td>production</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Ready for QA</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/MKT-2532/items-are-displayed-as-sold-after-delisting" target="_blank">Items are displayed as SOLD after delisting</a></td>
+              <td>(main)</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>development</td>
+              <td><span style="color:#ea580c">high</span></td>
+              <td>Triage</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/MKT-2511/android-the-how-would-you-like-to-sell-your-cards-screen-is-displayed" target="_blank">[Android] The `How would you like to sell your cards?` screen is di...</a></td>
+              <td>(main)</td>
+              <td><span class="tag tag-red">regression</span></td>
+              <td>development</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Todo</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/MKTPR-133/be-status-shows-paid-and-then-complete-after-payment-of-auction" target="_blank">[BE] status shows “Paid” and then “Complete” after payment of aucti...</a></td>
+              <td>Product</td>
+              <td><span class="tag tag-red">regression</span></td>
+              <td>development</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Todo</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/MKTPR-352/mobile-view-checkout-the-information-source-icon-is-too-small" target="_blank">[Mobile view] [Checkout] : the 'Information Source' icon is too small</a></td>
+              <td>Product</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>development</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Done</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/MKTPR-354/watchlist-the-item-no-longer-available-modal-appears-when-trying-to" target="_blank">[Watchlist] : the 'Item no longer available' modal appears when try...</a></td>
+              <td>Product</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>development</td>
+              <td><span style="color:#ca8a04">medium</span></td>
+              <td>Done</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/MKT-2495/checkout-v3-stuck-processing-reconciler-compensates-230-in-flight-ach" target="_blank">Checkout v3: stuck-processing reconciler compensates ~230 in-flight...</a></td>
+              <td>(main)</td>
+              <td><span class="tag tag-blue">progression</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#dc2626">critical</span></td>
+              <td>Done</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/MKTPR-261/android-wire-address-is-incorrect-on-order-confirmation-screen" target="_blank">[Android] WIRE address is incorrect on Order confirmation screen</a></td>
+              <td>Product</td>
+              <td><span class="tag tag-red">regression</span></td>
+              <td>development</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Done</td>
+            </tr>
+        </tbody>
+      </table>
+      <p class="detail" style="margin-top:8px">Showing 30 of 107 bugs</p>
+    </section>
+  </div>
+  <div class="page" id="page-instant-rips" style="display:none">
+    <button class="back-btn" onclick="showHome()">&larr; Back to Overview</button>
+    <div class="page-header">
+      <h2>Instant Rips</h2>
+      <div class="grade-badge grade-c">C</div>
+    </div>
+
+    <div class="kpi-grid kpi-grid-4">
+      <div class="kpi"><div class="value">50</div><div class="label">Total Bugs</div><div class="detail">15 triage · 17 open</div></div>
+      <div class="kpi danger"><div class="value">6</div><div class="label">Regressions</div></div>
+      <div class="kpi info"><div class="value">0</div><div class="label">Progressions</div></div>
+      <div class="kpi"><div class="value">5</div><div class="label">Sub-teams</div></div>
+    </div>
+
+    <section>
+      <h3>Bug Breakdown by Sub-team</h3>
+      <table>
+        <thead><tr><th>Sub-team</th><th>Total</th><th>Triage</th><th>Open</th><th>Regr.</th><th>Regr. %</th></tr></thead>
+        <tbody><tr>
+        <td>(main)</td>
+        <td><a href="https://linear.app/fanaticscollect/team/IR/all" target="_blank">4</a></td>
+        <td><span class="zero">0</span></td>
+        <td><a href="https://linear.app/fanaticscollect/team/IR/active" target="_blank" class="status-yellow">4</a></td>
+        <td><span class="zero">0</span></td>
+        <td><span class="">0%</span></td>
+      </tr><tr>
+        <td>iOS</td>
+        <td><a href="https://linear.app/fanaticscollect/team/IRI/all" target="_blank">3</a></td>
+        <td><span class="zero">0</span></td>
+        <td><a href="https://linear.app/fanaticscollect/team/IRI/active" target="_blank" class="status-green">2</a></td>
+        <td><a href="https://linear.app/fanaticscollect/team/IRI/all?label=Regression%20bug" target="_blank" class="status-red">3</a></td>
+        <td><span class="status-red">100%</span></td>
+      </tr><tr>
+        <td>Android</td>
+        <td><a href="https://linear.app/fanaticscollect/team/IRA/all" target="_blank">2</a></td>
+        <td><span class="zero">0</span></td>
+        <td><a href="https://linear.app/fanaticscollect/team/IRA/active" target="_blank" class="status-green">2</a></td>
+        <td><a href="https://linear.app/fanaticscollect/team/IRA/all?label=Regression%20bug" target="_blank" class="status-red">2</a></td>
+        <td><span class="status-red">100%</span></td>
+      </tr><tr>
+        <td>Web</td>
+        <td><a href="https://linear.app/fanaticscollect/team/IRW/all" target="_blank">5</a></td>
+        <td><span class="zero">0</span></td>
+        <td><a href="https://linear.app/fanaticscollect/team/IRW/active" target="_blank" class="status-yellow">5</a></td>
+        <td><a href="https://linear.app/fanaticscollect/team/IRW/all?label=Regression%20bug" target="_blank" class="status-red">1</a></td>
+        <td><span class="status-yellow">20%</span></td>
+      </tr><tr>
+        <td>Backend</td>
+        <td><a href="https://linear.app/fanaticscollect/team/IRB/all" target="_blank">36</a></td>
+        <td><a href="https://linear.app/fanaticscollect/team/IRB/triage" target="_blank" class="status-yellow">15</a></td>
+        <td><a href="https://linear.app/fanaticscollect/team/IRB/active" target="_blank" class="status-yellow">4</a></td>
+        <td><span class="zero">0</span></td>
+        <td><span class="">0%</span></td>
+      </tr></tbody>
+      </table>
+    </section>
+
+    <div class="grid-2">
+      <section>
+        <h3>By Environment</h3>
+        <div class="bar-row"><span class="bar-label">unspecified</span><div class="bar-track"><div class="bar-fill" style="width:100%;background:#6366f1"></div><span class="bar-value">46</span></div></div><div class="bar-row"><span class="bar-label">development</span><div class="bar-track"><div class="bar-fill" style="width:9%;background:#6366f1"></div><span class="bar-value">4</span></div></div>
+      </section>
+      <section>
+        <h3>By Severity</h3>
+        <div class="bar-row"><span class="bar-label">low</span><div class="bar-track"><div class="bar-fill" style="width:100%;background:#ea580c"></div><span class="bar-value">25</span></div></div><div class="bar-row"><span class="bar-label">medium</span><div class="bar-track"><div class="bar-fill" style="width:72%;background:#ea580c"></div><span class="bar-value">18</span></div></div><div class="bar-row"><span class="bar-label">high</span><div class="bar-track"><div class="bar-fill" style="width:24%;background:#ea580c"></div><span class="bar-value">6</span></div></div><div class="bar-row"><span class="bar-label">critical</span><div class="bar-track"><div class="bar-fill" style="width:4%;background:#ea580c"></div><span class="bar-value">1</span></div></div>
+      </section>
+    </div>
+
+    <section>
+      <h3>Recent Bugs</h3>
+      <table class="bug-table">
+        <thead><tr><th>Title</th><th>Sub-team</th><th>Type</th><th>Env</th><th>Severity</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/IRI-111/bug-non-user-friendly-error-when-a-user-purchases-a-spot" target="_blank">[Bug] Non user friendly error when a user purchases a spot simultan...</a></td>
+              <td>iOS</td>
+              <td><span class="tag tag-red">regression</span></td>
+              <td>development</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Prioritized</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/IRA-79/bug-non-user-friendly-error-when-a-user-purchases-a-spot" target="_blank">[Bug] Non user friendly error when a user purchases a spot simultan...</a></td>
+              <td>Android</td>
+              <td><span class="tag tag-red">regression</span></td>
+              <td>development</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Prioritized</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/IRA-78/android-search-by-keyword-is-not-returning-sold-out-repack" target="_blank">[Android] Search by Keyword is Not Returning Sold Out Repack</a></td>
+              <td>Android</td>
+              <td><span class="tag tag-red">regression</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Prioritized</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/IRW-222/ir-break-pyt-buy-now-price-is-not-visible-on-the-web-for-each-spot" target="_blank">IR Break PYT Buy Now price is not visible on the web for each spot</a></td>
+              <td>Web</td>
+              <td><span class="tag tag-red">regression</span></td>
+              <td>development</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Prioritized</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/IRI-108/ios-missing-gift-icon-in-label-instant-credit-pdp-ir-repack" target="_blank">[iOS] Missing 'Gift' Icon in Label 'Instant Credit' PDP IR Repack</a></td>
+              <td>iOS</td>
+              <td><span class="tag tag-red">regression</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Prioritized</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/IRI-107/ios-spot-list-assignee-not-updated-after-randomizing-on-ios" target="_blank">[ios] Spot list assignee not updated after randomizing on ios</a></td>
+              <td>iOS</td>
+              <td><span class="tag tag-red">regression</span></td>
+              <td>development</td>
+              <td><span style="color:#ca8a04">medium</span></td>
+              <td>Invalid</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/IRB-787/standardize-order-submitted-source-field-for-quick-shop-purchases" target="_blank">Standardize 'Order Submitted' source field for quick shop purchases...</a></td>
+              <td>Backend</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#ca8a04">medium</span></td>
+              <td>Triage</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/IRB-786/extend-buy-now-selected-event-to-all-quick-shop-button-locations-ios" target="_blank">Extend 'Buy Now Selected' event to all quick shop button locations ...</a></td>
+              <td>Backend</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#ca8a04">medium</span></td>
+              <td>Triage</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/IRB-785/track-quick-shop-button-tap-on-home-feed-android" target="_blank">Track quick shop button tap on home feed (Android)</a></td>
+              <td>Backend</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#ca8a04">medium</span></td>
+              <td>Triage</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/IRW-225/add-checks-to-validate-whether-ir-group-break-can-be-started" target="_blank">Add checks to validate whether IR group break can be started</a></td>
+              <td>Web</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#ea580c">high</span></td>
+              <td>Ready To Do</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/IRW-224/add-ir-group-break-to-create-a-break-form" target="_blank">Add IR group break to create a break form</a></td>
+              <td>Web</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#ea580c">high</span></td>
+              <td>Ready To Do</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/IRB-783/expose-getrepackspaginated-to-collect-users-access-granted-checklists" target="_blank">Expose getRepacksPaginated to collect users (access-granted checkli...</a></td>
+              <td>Backend</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#ea580c">high</span></td>
+              <td>Invalid</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/IRB-782/expose-checklist-id-on-collect-listing-graphql" target="_blank">Expose checklist_id on Collect listing GraphQL</a></td>
+              <td>Backend</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#ca8a04">medium</span></td>
+              <td>Released/Done</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/IRB-781/smoke-no-op-comment-in-mixexs-for-cross-bot-planning-validation" target="_blank">Smoke: no-op comment in mix.exs for cross-bot planning validation</a></td>
+              <td>Backend</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Invalid</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/IRB-780/implementation-plan" target="_blank">Implementation Plan</a></td>
+              <td>Backend</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#ca8a04">medium</span></td>
+              <td>Triage</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/IRB-779/implementation-plan" target="_blank">Implementation Plan</a></td>
+              <td>Backend</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#ca8a04">medium</span></td>
+              <td>Triage</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/IRB-778/smoke-add-no-op-comment-to-mixexs-trusted-plan-4c03b572" target="_blank">Smoke: add no-op comment to mix.exs (trusted-plan-4c03b572)</a></td>
+              <td>Backend</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Invalid</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/IRB-777/implementation-plan" target="_blank">Implementation Plan</a></td>
+              <td>Backend</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#ca8a04">medium</span></td>
+              <td>Triage</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/IRB-784/instant-rips-group-breaks-we-over-paid-and-under-paid-our-sellers" target="_blank">instant rips group breaks: we over-paid and under-paid our sellers ...</a></td>
+              <td>Backend</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Ready To Do</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/IRB-775/serialize-openboxopen-to-prevent-multiple-active-instant-rip-break" target="_blank">Serialize OpenBox.open to prevent multiple active instant rip break...</a></td>
+              <td>Backend</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Backlog</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/IRB-774/add-getrecentrepackimages-query-that-filters-default-packtexture" target="_blank">Add getRecentRepackImages query that filters default pack/texture i...</a></td>
+              <td>Backend</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Triage</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/IRW-223/use-custom-product-image-when-available-ust" target="_blank">Use custom product image when available - UST</a></td>
+              <td>Web</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#ca8a04">medium</span></td>
+              <td>Ready To Do</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/IRW-221/use-custom-product-image-when-available-web" target="_blank">Use custom product image when available - web</a></td>
+              <td>Web</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#ca8a04">medium</span></td>
+              <td>Ready To Do</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/IRB-773/emit-kinesis-tracking-events-for-scan-feedback-is-image-result-correct" target="_blank">Emit Kinesis tracking events for scan feedback (is_image_result_cor...</a></td>
+              <td>Backend</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#ea580c">high</span></td>
+              <td>Invalid</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/IRB-772/smoke-no-op-comment-change-to-verify-cross-bot-planning" target="_blank">Smoke: no-op comment change to verify cross-bot planning</a></td>
+              <td>Backend</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Invalid</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/IRB-771/implementation-plan" target="_blank">Implementation Plan</a></td>
+              <td>Backend</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#ca8a04">medium</span></td>
+              <td>Triage</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/IRB-770/smoke-add-no-op-comment-to-live-api-for-cross-bot-planning-validation" target="_blank">Smoke: add no-op comment to live-api for cross-bot planning validation</a></td>
+              <td>Backend</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Invalid</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/IRB-769/implementation-plan" target="_blank">Implementation Plan</a></td>
+              <td>Backend</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#ca8a04">medium</span></td>
+              <td>Triage</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/IRB-768/implementation-plan" target="_blank">Implementation Plan</a></td>
+              <td>Backend</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#ca8a04">medium</span></td>
+              <td>Triage</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/IRB-767/feat-mark-cloned-submissions-with-source-notes-in-dev-create-vault" target="_blank">feat: Mark cloned submissions with source notes in DEV Create Vault...</a></td>
+              <td>Backend</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Released/Done</td>
+            </tr>
+        </tbody>
+      </table>
+      <p class="detail" style="margin-top:8px">Showing 30 of 50 bugs</p>
+    </section>
+  </div>
+  <div class="page" id="page-client" style="display:none">
+    <button class="back-btn" onclick="showHome()">&larr; Back to Overview</button>
+    <div class="page-header">
+      <h2>Client</h2>
+      <div class="grade-badge grade-d">D</div>
+    </div>
+
+    <div class="kpi-grid kpi-grid-4">
+      <div class="kpi"><div class="value">22</div><div class="label">Total Bugs</div><div class="detail">0 triage · 19 open</div></div>
+      <div class="kpi danger"><div class="value">10</div><div class="label">Regressions</div></div>
+      <div class="kpi info"><div class="value">8</div><div class="label">Progressions</div></div>
+      <div class="kpi"><div class="value">4</div><div class="label">Sub-teams</div></div>
+    </div>
+
+    <section>
+      <h3>Bug Breakdown by Sub-team</h3>
+      <table>
+        <thead><tr><th>Sub-team</th><th>Total</th><th>Triage</th><th>Open</th><th>Regr.</th><th>Regr. %</th></tr></thead>
+        <tbody><tr>
+        <td>Android</td>
+        <td><a href="https://linear.app/fanaticscollect/team/CAND/all" target="_blank">9</a></td>
+        <td><span class="zero">0</span></td>
+        <td><a href="https://linear.app/fanaticscollect/team/CAND/active" target="_blank" class="status-red">7</a></td>
+        <td><a href="https://linear.app/fanaticscollect/team/CAND/all?label=Regression%20bug" target="_blank" class="status-red">3</a></td>
+        <td><span class="status-red">33%</span></td>
+      </tr><tr>
+        <td>Web</td>
+        <td><a href="https://linear.app/fanaticscollect/team/CWEB/all" target="_blank">5</a></td>
+        <td><span class="zero">0</span></td>
+        <td><a href="https://linear.app/fanaticscollect/team/CWEB/active" target="_blank" class="status-yellow">5</a></td>
+        <td><a href="https://linear.app/fanaticscollect/team/CWEB/all?label=Regression%20bug" target="_blank" class="status-red">3</a></td>
+        <td><span class="status-red">60%</span></td>
+      </tr><tr>
+        <td>iOS</td>
+        <td><a href="https://linear.app/fanaticscollect/team/CIOS/all" target="_blank">6</a></td>
+        <td><span class="zero">0</span></td>
+        <td><a href="https://linear.app/fanaticscollect/team/CIOS/active" target="_blank" class="status-yellow">5</a></td>
+        <td><a href="https://linear.app/fanaticscollect/team/CIOS/all?label=Regression%20bug" target="_blank" class="status-red">3</a></td>
+        <td><span class="status-red">50%</span></td>
+      </tr><tr>
+        <td>App</td>
+        <td><a href="https://linear.app/fanaticscollect/team/CLI/all" target="_blank">2</a></td>
+        <td><span class="zero">0</span></td>
+        <td><a href="https://linear.app/fanaticscollect/team/CLI/active" target="_blank" class="status-green">2</a></td>
+        <td><a href="https://linear.app/fanaticscollect/team/CLI/all?label=Regression%20bug" target="_blank" class="status-red">1</a></td>
+        <td><span class="status-red">50%</span></td>
+      </tr></tbody>
+      </table>
+    </section>
+
+    <div class="grid-2">
+      <section>
+        <h3>By Environment</h3>
+        <div class="bar-row"><span class="bar-label">development</span><div class="bar-track"><div class="bar-fill" style="width:100%;background:#6366f1"></div><span class="bar-value">17</span></div></div><div class="bar-row"><span class="bar-label">production</span><div class="bar-track"><div class="bar-fill" style="width:24%;background:#6366f1"></div><span class="bar-value">4</span></div></div><div class="bar-row"><span class="bar-label">unspecified</span><div class="bar-track"><div class="bar-fill" style="width:6%;background:#6366f1"></div><span class="bar-value">1</span></div></div>
+      </section>
+      <section>
+        <h3>By Severity</h3>
+        <div class="bar-row"><span class="bar-label">medium</span><div class="bar-track"><div class="bar-fill" style="width:100%;background:#ea580c"></div><span class="bar-value">11</span></div></div><div class="bar-row"><span class="bar-label">low</span><div class="bar-track"><div class="bar-fill" style="width:64%;background:#ea580c"></div><span class="bar-value">7</span></div></div><div class="bar-row"><span class="bar-label">high</span><div class="bar-track"><div class="bar-fill" style="width:36%;background:#ea580c"></div><span class="bar-value">4</span></div></div>
+      </section>
+    </div>
+
+    <section>
+      <h3>Recent Bugs</h3>
+      <table class="bug-table">
+        <thead><tr><th>Title</th><th>Sub-team</th><th>Type</th><th>Env</th><th>Severity</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/CAND-174/android-collect-marketplace-transactiontoolargeexception-saving" target="_blank">Android Collect (Marketplace): `TransactionTooLargeException` savin...</a></td>
+              <td>Android</td>
+              <td><span class="tag tag-red">regression</span></td>
+              <td>production</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Todo</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/CWEB-15/srp-the-offer-state-tile-is-being-cut-off" target="_blank">[SRP] : the offer state tile is being cut off</a></td>
+              <td>Web</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>development</td>
+              <td><span style="color:#ca8a04">medium</span></td>
+              <td>Todo</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/CWEB-14/activity-flyout-filter-menu-input-fields-are-highlighting-on-hover-but" target="_blank">[Activity] [Flyout filter menu] : Input fields are highlighting on ...</a></td>
+              <td>Web</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>development</td>
+              <td><span style="color:#ca8a04">medium</span></td>
+              <td>Todo</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/CIOS-278/live-ios-when-a-user-is-banned-and-token-is-expired-the-user-remains" target="_blank">[Live] [iOS] When a user is banned and token is expired, the user r...</a></td>
+              <td>iOS</td>
+              <td><span class="tag tag-red">regression</span></td>
+              <td>development</td>
+              <td><span style="color:#ca8a04">medium</span></td>
+              <td>Todo</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/CAND-169/live-android-when-a-user-is-banned-and-token-is-expired-the-user" target="_blank">[Live] [Android] When a user is banned and token is expired, the us...</a></td>
+              <td>Android</td>
+              <td><span class="tag tag-red">regression</span></td>
+              <td>development</td>
+              <td><span style="color:#ca8a04">medium</span></td>
+              <td>Todo</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/CWEB-13/live-web-when-a-user-is-banned-and-token-is-expired-the-user-remains" target="_blank">[Live] [Web] When a user is banned and token is expired, the user r...</a></td>
+              <td>Web</td>
+              <td><span class="tag tag-red">regression</span></td>
+              <td>development</td>
+              <td><span style="color:#ca8a04">medium</span></td>
+              <td>Todo</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/CWEB-12/collect-web-banned-users-always-redirected-to-the-home-page-when-they" target="_blank">[Collect] [Web] Banned users always redirected to the home page whe...</a></td>
+              <td>Web</td>
+              <td><span class="tag tag-red">regression</span></td>
+              <td>development</td>
+              <td><span style="color:#ca8a04">medium</span></td>
+              <td>Todo</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/CWEB-11/live-web-banned-users-always-redirected-to-the-home-page-when-they" target="_blank">[Live] [Web] Banned users always redirected to the home page when t...</a></td>
+              <td>Web</td>
+              <td><span class="tag tag-red">regression</span></td>
+              <td>development</td>
+              <td><span style="color:#ca8a04">medium</span></td>
+              <td>Todo</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/CAND-170/live-android-banned-users-are-shown-an-invalid-email-or-password-error" target="_blank">[Live] [Android] Banned users are shown an &quot;Invalid email or passwo...</a></td>
+              <td>Android</td>
+              <td><span class="tag tag-red">regression</span></td>
+              <td>development</td>
+              <td><span style="color:#ca8a04">medium</span></td>
+              <td>Todo</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/CIOS-277/live-ios-banned-users-are-shown-an-invalid-email-or-password-error" target="_blank">[Live] [iOS] Banned users are shown an &quot;Invalid email or password&quot; ...</a></td>
+              <td>iOS</td>
+              <td><span class="tag tag-red">regression</span></td>
+              <td>development</td>
+              <td><span style="color:#ca8a04">medium</span></td>
+              <td>Todo</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/CLI-188/collect-splash-main-screen-appears-dark-does-not-support-dark-mode" target="_blank">[Collect] Splash (main) screen appears dark, does not support dark ...</a></td>
+              <td>App</td>
+              <td><span class="tag tag-red">regression</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#ca8a04">medium</span></td>
+              <td>Todo</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/CIOS-273/ios-mkt-tab-search-recent-searches-tab-missing-only-saved-searches" target="_blank">[iOS] MKT tab &gt; Search: Recent Searches tab missing (only Saved Sea...</a></td>
+              <td>iOS</td>
+              <td><span class="tag tag-blue">progression</span></td>
+              <td>development</td>
+              <td><span style="color:#ea580c">high</span></td>
+              <td>Release Ready</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/CIOS-272/collectdev-continue-button-hidden-behind-keyboard-when-dropdown-is" target="_blank">[Collect][Dev] &quot;Continue&quot; button hidden behind keyboard when dropdo...</a></td>
+              <td>iOS</td>
+              <td><span class="tag tag-red">regression</span></td>
+              <td>development</td>
+              <td><span style="color:#ea580c">high</span></td>
+              <td>Todo</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/CAND-162/hide-edit-address-in-android-collect-app" target="_blank">Hide edit address in Android Collect app</a></td>
+              <td>Android</td>
+              <td><span class="tag tag-blue">progression</span></td>
+              <td>production</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Todo</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/CAND-161/hide-edit-address-in-android-live-app" target="_blank">Hide edit address in Android Live app</a></td>
+              <td>Android</td>
+              <td><span class="tag tag-blue">progression</span></td>
+              <td>production</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Todo</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/CAND-160/remove-edit-address-flow-on-android-apps" target="_blank">Remove edit address flow on Android apps</a></td>
+              <td>Android</td>
+              <td><span class="tag tag-blue">progression</span></td>
+              <td>production</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Todo</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/CIOS-271/saved-search-button-missing-after-marketplace-search" target="_blank">Saved search button missing after marketplace search</a></td>
+              <td>iOS</td>
+              <td><span class="tag tag-blue">progression</span></td>
+              <td>development</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Release Ready</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/CIOS-270/marketplace-search-shows-only-saved-searches" target="_blank">Marketplace search shows only saved searches</a></td>
+              <td>iOS</td>
+              <td><span class="tag tag-blue">progression</span></td>
+              <td>development</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Canceled</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/CAND-159/username-creation-prompt-appears-during-onboarding-it-was-removed-in" target="_blank">Username creation prompt appears during onboarding (it was removed ...</a></td>
+              <td>Android</td>
+              <td><span class="tag tag-blue">progression</span></td>
+              <td>development</td>
+              <td><span style="color:#ea580c">high</span></td>
+              <td>Done</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/CAND-157/pending-offers-message-not-shown-in-live-android" target="_blank">Pending offers message not shown in Live Android</a></td>
+              <td>Android</td>
+              <td><span class="tag tag-blue">progression</span></td>
+              <td>development</td>
+              <td><span style="color:#ea580c">high</span></td>
+              <td>Release Ready</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/CLI-196/activity-the-year-cant-be-less-than-1500-validation-is-missing-for" target="_blank">[Activity] : the 'Year can't be less than 1500' validation is missi...</a></td>
+              <td>App</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>development</td>
+              <td><span style="color:#ca8a04">medium</span></td>
+              <td>In Review</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/CAND-156/use-default-status-for-whiteblack-notifications" target="_blank">Use DEFAULT status for white/black notifications</a></td>
+              <td>Android</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>development</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Done</td>
+            </tr>
+        </tbody>
+      </table>
+      
+    </section>
+  </div>
+  <div class="page" id="page-collecting" style="display:none">
+    <button class="back-btn" onclick="showHome()">&larr; Back to Overview</button>
+    <div class="page-header">
+      <h2>Collecting</h2>
+      <div class="grade-badge grade-c">C</div>
+    </div>
+
+    <div class="kpi-grid kpi-grid-4">
+      <div class="kpi"><div class="value">21</div><div class="label">Total Bugs</div><div class="detail">11 triage · 8 open</div></div>
+      <div class="kpi danger"><div class="value">4</div><div class="label">Regressions</div></div>
+      <div class="kpi info"><div class="value">14</div><div class="label">Progressions</div></div>
+      <div class="kpi"><div class="value">3</div><div class="label">Sub-teams</div></div>
+    </div>
+
+    <section>
+      <h3>Bug Breakdown by Sub-team</h3>
+      <table>
+        <thead><tr><th>Sub-team</th><th>Total</th><th>Triage</th><th>Open</th><th>Regr.</th><th>Regr. %</th></tr></thead>
+        <tbody><tr>
+        <td>Web</td>
+        <td><a href="https://linear.app/fanaticscollect/team/WEBC/all" target="_blank">1</a></td>
+        <td><span class="zero">0</span></td>
+        <td><a href="https://linear.app/fanaticscollect/team/WEBC/active" target="_blank" class="status-green">1</a></td>
+        <td><span class="zero">0</span></td>
+        <td><span class="">0%</span></td>
+      </tr><tr>
+        <td>Android</td>
+        <td><a href="https://linear.app/fanaticscollect/team/ANC/all" target="_blank">10</a></td>
+        <td><a href="https://linear.app/fanaticscollect/team/ANC/triage" target="_blank" class="status-yellow">7</a></td>
+        <td><a href="https://linear.app/fanaticscollect/team/ANC/active" target="_blank" class="status-yellow">3</a></td>
+        <td><span class="zero">0</span></td>
+        <td><span class="">0%</span></td>
+      </tr><tr>
+        <td>iOS</td>
+        <td><a href="https://linear.app/fanaticscollect/team/IOSC/all" target="_blank">10</a></td>
+        <td><a href="https://linear.app/fanaticscollect/team/IOSC/triage" target="_blank" class="status-yellow">4</a></td>
+        <td><a href="https://linear.app/fanaticscollect/team/IOSC/active" target="_blank" class="status-yellow">4</a></td>
+        <td><a href="https://linear.app/fanaticscollect/team/IOSC/all?label=Regression%20bug" target="_blank" class="status-red">4</a></td>
+        <td><span class="status-red">40%</span></td>
+      </tr></tbody>
+      </table>
+    </section>
+
+    <div class="grid-2">
+      <section>
+        <h3>By Environment</h3>
+        <div class="bar-row"><span class="bar-label">development</span><div class="bar-track"><div class="bar-fill" style="width:100%;background:#6366f1"></div><span class="bar-value">16</span></div></div><div class="bar-row"><span class="bar-label">unspecified</span><div class="bar-track"><div class="bar-fill" style="width:19%;background:#6366f1"></div><span class="bar-value">3</span></div></div><div class="bar-row"><span class="bar-label">production</span><div class="bar-track"><div class="bar-fill" style="width:13%;background:#6366f1"></div><span class="bar-value">2</span></div></div>
+      </section>
+      <section>
+        <h3>By Severity</h3>
+        <div class="bar-row"><span class="bar-label">low</span><div class="bar-track"><div class="bar-fill" style="width:100%;background:#ea580c"></div><span class="bar-value">16</span></div></div><div class="bar-row"><span class="bar-label">medium</span><div class="bar-track"><div class="bar-fill" style="width:25%;background:#ea580c"></div><span class="bar-value">4</span></div></div><div class="bar-row"><span class="bar-label">high</span><div class="bar-track"><div class="bar-fill" style="width:6%;background:#ea580c"></div><span class="bar-value">1</span></div></div>
+      </section>
+    </div>
+
+    <section>
+      <h3>Recent Bugs</h3>
+      <table class="bug-table">
+        <thead><tr><th>Title</th><th>Sub-team</th><th>Type</th><th>Env</th><th>Severity</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/WEBC-320/zindex-conflict-on-collections-table-actions-cell" target="_blank">zindex conflict on collections table actions cell</a></td>
+              <td>Web</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Release Ready</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/ANC-436/android-submit-to-vault-is-unresponsive-after-scanner-add" target="_blank">Android Submit to Vault is unresponsive after scanner add</a></td>
+              <td>Android</td>
+              <td><span class="tag tag-blue">progression</span></td>
+              <td>development</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Todo</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/IOSC-470/back-button-is-overlapping-and-user-cannot-navigate-back-from-oip" target="_blank">Back button is overlapping and user cannot navigate back from OIP s...</a></td>
+              <td>iOS</td>
+              <td><span class="tag tag-blue">progression</span></td>
+              <td>development</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Triage</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/IOSC-472/collect-grail-badge-is-difficult-to-see-on-collection-tab" target="_blank">[Collect] &quot;Grail&quot; badge is difficult to see on Collection tab</a></td>
+              <td>iOS</td>
+              <td><span class="tag tag-red">regression</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#ca8a04">medium</span></td>
+              <td>Canceled</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/IOSC-473/ios-collection-item-edit-submit-confirmation-modal-incorrect-icon-in" target="_blank">[iOS] Collection &gt; item &gt; edit &gt; submit confirmation modal: incorre...</a></td>
+              <td>iOS</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>production</td>
+              <td><span style="color:#ca8a04">medium</span></td>
+              <td>Todo</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/IOSC-469/cdp-if-parallel-is-returned-in-cardcatalogitem-when" target="_blank">CDP - If parallel is returned in &quot;cardCatalogItem&quot; when &quot;cardCatalo...</a></td>
+              <td>iOS</td>
+              <td><span class="tag tag-blue">progression</span></td>
+              <td>development</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Triage</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/ANC-434/uip-there-is-a-grey-line-section-divider-after-image-section" target="_blank">UIP - There is a grey line section divider after image section</a></td>
+              <td>Android</td>
+              <td><span class="tag tag-blue">progression</span></td>
+              <td>development</td>
+              <td><span style="color:#ca8a04">medium</span></td>
+              <td>Triage</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/ANC-433/scanner-processing-only-one-scanning-message-is-shown-for-first-8" target="_blank">Scanner - Processing - Only one 'Scanning' message is shown for fir...</a></td>
+              <td>Android</td>
+              <td><span class="tag tag-blue">progression</span></td>
+              <td>development</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Triage</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/ANC-432/recent-scans-all-recent-scans-open-only-cdp-uip-is-not-opened" target="_blank">Recent Scans - All recent scans open only CDP, UIP is not opened</a></td>
+              <td>Android</td>
+              <td><span class="tag tag-blue">progression</span></td>
+              <td>development</td>
+              <td><span style="color:#ea580c">high</span></td>
+              <td>Triage</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/ANC-431/uip-add-to-collection-button-area-has-incorrect-color-grey-instead-of" target="_blank">UIP - 'Add to Collection' button area has incorrect color (grey ins...</a></td>
+              <td>Android</td>
+              <td><span class="tag tag-blue">progression</span></td>
+              <td>development</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Triage</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/ANC-430/uip-if-user-opens-uip-of-already-added-to-colelction-item-add-to" target="_blank">UIP - If user opens UIP of already added to colelction item, 'Add t...</a></td>
+              <td>Android</td>
+              <td><span class="tag tag-blue">progression</span></td>
+              <td>development</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Ready for QA</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/ANC-429/uip-view-in-colleciton-button-leads-to-collection-instead-of-oip" target="_blank">UIP - View in Colleciton button leads to Collection instead of OIP</a></td>
+              <td>Android</td>
+              <td><span class="tag tag-blue">progression</span></td>
+              <td>development</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Ready for QA</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/ANC-428/cdp-and-uip-guide-price-section-title-has-incorrect-letter-case" target="_blank">CDP &amp; UIP - 'Guide Price' section title has incorrect letter case</a></td>
+              <td>Android</td>
+              <td><span class="tag tag-blue">progression</span></td>
+              <td>development</td>
+              <td><span style="color:#ca8a04">medium</span></td>
+              <td>Triage</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/ANC-427/scanner-processing-error-incorrect-error-is-show-when-be-returns-error" target="_blank">Scanner - Processing - Error - Incorrect error is show when BE retu...</a></td>
+              <td>Android</td>
+              <td><span class="tag tag-blue">progression</span></td>
+              <td>development</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Triage</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/ANC-426/cdp-parallel-incorrect-parallel-is-shown-as-selected-if-user-selects-a" target="_blank">CDP - Parallel - Incorrect parallel is shown as selected if user se...</a></td>
+              <td>Android</td>
+              <td><span class="tag tag-blue">progression</span></td>
+              <td>development</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Triage</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/IOSC-468/folders-empty-and-no-results-states-has-incorrect-alignments-on-add" target="_blank">Folders: Empty &amp; No Results states has incorrect alignments on Add ...</a></td>
+              <td>iOS</td>
+              <td><span class="tag tag-blue">progression</span></td>
+              <td>development</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Ready for QA</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/IOSC-465/recent-scans-sometimes-elements-are-shown-outside-their-correct" target="_blank">Recent Scans - Sometimes elements are shown outside their correct l...</a></td>
+              <td>iOS</td>
+              <td><span class="tag tag-red">regression</span></td>
+              <td>development</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Triage</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/IOSC-464/colelction-tab-list-of-items-if-user-taps-outside-the-title-the" target="_blank">Colelction tab: List of items - If user taps outside the title, the...</a></td>
+              <td>iOS</td>
+              <td><span class="tag tag-red">regression</span></td>
+              <td>development</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>QA Verified</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/IOSC-463/collection-tab-white-screen-wo-loader-is-shown-sometimes-when-items" target="_blank">Collection tab: White screen w/o loader is shown sometimes when ite...</a></td>
+              <td>iOS</td>
+              <td><span class="tag tag-red">regression</span></td>
+              <td>development</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>In Review</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/IOSC-466/card-images-dont-load" target="_blank">Card images don’t load</a></td>
+              <td>iOS</td>
+              <td><span class="tag tag-blue">progression</span></td>
+              <td>production</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Triage</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/IOSC-462/images-are-empty-for-scanned-collection-cards" target="_blank">Images are empty for scanned collection cards</a></td>
+              <td>iOS</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Canceled</td>
+            </tr>
+        </tbody>
+      </table>
+      
+    </section>
+  </div>
+  <div class="page" id="page-scan-tech" style="display:none">
+    <button class="back-btn" onclick="showHome()">&larr; Back to Overview</button>
+    <div class="page-header">
+      <h2>Scan Tech</h2>
+      <div class="grade-badge grade-b">B</div>
+    </div>
+
+    <div class="kpi-grid kpi-grid-4">
+      <div class="kpi"><div class="value">18</div><div class="label">Total Bugs</div><div class="detail">13 triage · 4 open</div></div>
+      <div class="kpi danger"><div class="value">0</div><div class="label">Regressions</div></div>
+      <div class="kpi info"><div class="value">7</div><div class="label">Progressions</div></div>
+      <div class="kpi"><div class="value">1</div><div class="label">Sub-teams</div></div>
+    </div>
+
+    <section>
+      <h3>Bug Breakdown by Sub-team</h3>
+      <table>
+        <thead><tr><th>Sub-team</th><th>Total</th><th>Triage</th><th>Open</th><th>Regr.</th><th>Regr. %</th></tr></thead>
+        <tbody><tr>
+        <td>(main)</td>
+        <td><a href="https://linear.app/fanaticscollect/team/SCA/all" target="_blank">18</a></td>
+        <td><a href="https://linear.app/fanaticscollect/team/SCA/triage" target="_blank" class="status-yellow">13</a></td>
+        <td><a href="https://linear.app/fanaticscollect/team/SCA/active" target="_blank" class="status-yellow">4</a></td>
+        <td><span class="zero">0</span></td>
+        <td><span class="">0%</span></td>
+      </tr></tbody>
+      </table>
+    </section>
+
+    <div class="grid-2">
+      <section>
+        <h3>By Environment</h3>
+        <div class="bar-row"><span class="bar-label">unspecified</span><div class="bar-track"><div class="bar-fill" style="width:100%;background:#6366f1"></div><span class="bar-value">11</span></div></div><div class="bar-row"><span class="bar-label">development</span><div class="bar-track"><div class="bar-fill" style="width:36%;background:#6366f1"></div><span class="bar-value">4</span></div></div><div class="bar-row"><span class="bar-label">production</span><div class="bar-track"><div class="bar-fill" style="width:27%;background:#6366f1"></div><span class="bar-value">3</span></div></div>
+      </section>
+      <section>
+        <h3>By Severity</h3>
+        <div class="bar-row"><span class="bar-label">low</span><div class="bar-track"><div class="bar-fill" style="width:100%;background:#ea580c"></div><span class="bar-value">15</span></div></div><div class="bar-row"><span class="bar-label">medium</span><div class="bar-track"><div class="bar-fill" style="width:13%;background:#ea580c"></div><span class="bar-value">2</span></div></div><div class="bar-row"><span class="bar-label">high</span><div class="bar-track"><div class="bar-fill" style="width:7%;background:#ea580c"></div><span class="bar-value">1</span></div></div>
+      </section>
+    </div>
+
+    <section>
+      <h3>Recent Bugs</h3>
+      <table class="bug-table">
+        <thead><tr><th>Title</th><th>Sub-team</th><th>Type</th><th>Env</th><th>Severity</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/SCA-988/big-variance-in-price-for-card" target="_blank">Big variance in price for card</a></td>
+              <td>(main)</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Triage</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/SCA-990/first-scan-said-its-a-11-second-scan-25" target="_blank">First scan said it’s a 1/1. Second scan /25</a></td>
+              <td>(main)</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Triage</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/SCA-991/not-50-earlier-scan-said-its-an-auto-as-well" target="_blank">Not /50. Earlier scan said it’s an auto as well</a></td>
+              <td>(main)</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Triage</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/SCA-992/wrong-card-description-and-set" target="_blank">Wrong card description and set</a></td>
+              <td>(main)</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Triage</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/SCA-977/why-was-this-picked-as-golden-glitter" target="_blank">why was this picked as golden glitter?</a></td>
+              <td>(main)</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Triage</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/SCA-978/price-range-too-large" target="_blank">Price range too large</a></td>
+              <td>(main)</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Triage</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/SCA-967/create-feature-flag-to-control-scanner-in-submission-flow-on-android" target="_blank">Create Feature Flag to Control “Scanner in Submission” Flow on Android</a></td>
+              <td>(main)</td>
+              <td><span class="tag tag-blue">progression</span></td>
+              <td>development</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Ready to deploy</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/SCA-958/android-first-time-find-cards-are-not-added-to-processing-section" target="_blank">Android - First time find Cards are not added to Processing section...</a></td>
+              <td>(main)</td>
+              <td><span class="tag tag-blue">progression</span></td>
+              <td>development</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Triage</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/SCA-981/price-doesnt-change-when-going-from-base-to-superstore-11" target="_blank">Price doesn’t change when going from base to superstore 1:1</a></td>
+              <td>(main)</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Triage</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/SCA-980/price-variance-is-pretty-wild-for-this-one" target="_blank">Price variance is pretty wild for this one</a></td>
+              <td>(main)</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Triage</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/SCA-979/a-huge-number-of-parrallels-here-impossible-to-choose" target="_blank">A huge number of parrallels here. Impossible to choose</a></td>
+              <td>(main)</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Triage</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/SCA-953/ios-cant-select-the-cards-easily-when-select-the-items-to-folders" target="_blank">[iOS] Can't select the cards easily when select the items to folders</a></td>
+              <td>(main)</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#ea580c">high</span></td>
+              <td>Triage</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/SCA-947/android-submit-to-vault-scanner-button-is-unresponsive" target="_blank">Android Submit to Vault scanner button is unresponsive</a></td>
+              <td>(main)</td>
+              <td><span class="tag tag-blue">progression</span></td>
+              <td>development</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Ready for QA</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/SCA-946/android-can-add-same-card-to-collection-multiple-times" target="_blank">Android can add same card to collection multiple times</a></td>
+              <td>(main)</td>
+              <td><span class="tag tag-blue">progression</span></td>
+              <td>development</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>In Test</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/SCA-930/ios-the-text-prompt-and-button-are-overlapping-under-manual-mode" target="_blank">[iOS] The text prompt and button are overlapping under manual mode</a></td>
+              <td>(main)</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#ca8a04">medium</span></td>
+              <td>Canceled</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/SCA-911/product-value-should-be-right-aligned-like-the-other-card-detail" target="_blank">Product value should be right aligned like the other card detail fi...</a></td>
+              <td>(main)</td>
+              <td><span class="tag tag-blue">progression</span></td>
+              <td>production</td>
+              <td><span style="color:#ca8a04">medium</span></td>
+              <td>Ready for QA</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/SCA-909/need-to-show-all-details" target="_blank">Need to show all details</a></td>
+              <td>(main)</td>
+              <td><span class="tag tag-blue">progression</span></td>
+              <td>production</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Triage</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/SCA-910/scanned-items-should-show-more-details-in-list" target="_blank">Scanned items should show more details in list</a></td>
+              <td>(main)</td>
+              <td><span class="tag tag-blue">progression</span></td>
+              <td>production</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Triage</td>
+            </tr>
+        </tbody>
+      </table>
+      
+    </section>
+  </div>
+  <div class="page" id="page-topps" style="display:none">
+    <button class="back-btn" onclick="showHome()">&larr; Back to Overview</button>
+    <div class="page-header">
+      <h2>Topps</h2>
+      <div class="grade-badge grade-d">D</div>
+    </div>
+
+    <div class="kpi-grid kpi-grid-4">
+      <div class="kpi"><div class="value">6</div><div class="label">Total Bugs</div><div class="detail">1 triage · 5 open</div></div>
+      <div class="kpi danger"><div class="value">4</div><div class="label">Regressions</div></div>
+      <div class="kpi info"><div class="value">0</div><div class="label">Progressions</div></div>
+      <div class="kpi"><div class="value">1</div><div class="label">Sub-teams</div></div>
+    </div>
+
+    <section>
+      <h3>Bug Breakdown by Sub-team</h3>
+      <table>
+        <thead><tr><th>Sub-team</th><th>Total</th><th>Triage</th><th>Open</th><th>Regr.</th><th>Regr. %</th></tr></thead>
+        <tbody><tr>
+        <td>(main)</td>
+        <td><a href="https://linear.app/fanaticscollect/team/TOP/all" target="_blank">6</a></td>
+        <td><a href="https://linear.app/fanaticscollect/team/TOP/triage" target="_blank" class="status-yellow">1</a></td>
+        <td><a href="https://linear.app/fanaticscollect/team/TOP/active" target="_blank" class="status-yellow">5</a></td>
+        <td><a href="https://linear.app/fanaticscollect/team/TOP/all?label=Regression%20bug" target="_blank" class="status-red">4</a></td>
+        <td><span class="status-red">67%</span></td>
+      </tr></tbody>
+      </table>
+    </section>
+
+    <div class="grid-2">
+      <section>
+        <h3>By Environment</h3>
+        <div class="bar-row"><span class="bar-label">development</span><div class="bar-track"><div class="bar-fill" style="width:100%;background:#6366f1"></div><span class="bar-value">3</span></div></div><div class="bar-row"><span class="bar-label">production</span><div class="bar-track"><div class="bar-fill" style="width:67%;background:#6366f1"></div><span class="bar-value">2</span></div></div><div class="bar-row"><span class="bar-label">unspecified</span><div class="bar-track"><div class="bar-fill" style="width:33%;background:#6366f1"></div><span class="bar-value">1</span></div></div>
+      </section>
+      <section>
+        <h3>By Severity</h3>
+        <div class="bar-row"><span class="bar-label">low</span><div class="bar-track"><div class="bar-fill" style="width:100%;background:#ea580c"></div><span class="bar-value">4</span></div></div><div class="bar-row"><span class="bar-label">high</span><div class="bar-track"><div class="bar-fill" style="width:25%;background:#ea580c"></div><span class="bar-value">1</span></div></div><div class="bar-row"><span class="bar-label">medium</span><div class="bar-track"><div class="bar-fill" style="width:25%;background:#ea580c"></div><span class="bar-value">1</span></div></div>
+      </section>
+    </div>
+
+    <section>
+      <h3>Recent Bugs</h3>
+      <table class="bug-table">
+        <thead><tr><th>Title</th><th>Sub-team</th><th>Type</th><th>Env</th><th>Severity</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/TOP-3416/checkout-topps-seller-missing-validation-for-dollarx-away-from-free" target="_blank">Checkout (Topps Seller) – Missing validation for “$X away from free...</a></td>
+              <td>(main)</td>
+              <td><span class="tag tag-red">regression</span></td>
+              <td>development</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Ready To Do</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/TOP-3415/checkout-topps-seller-missing-validation-for-dollarx-away-from-free" target="_blank">Checkout (Topps Seller) – Missing validation for “$X away from free...</a></td>
+              <td>(main)</td>
+              <td><span class="tag tag-red">regression</span></td>
+              <td>development</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>In Progress</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/TOP-3412/ranger-store-locator-shows-empty-map-and-no-store-listings-due-to-cors" target="_blank">[Ranger] Store Locator shows empty map and no store listings due to...</a></td>
+              <td>(main)</td>
+              <td><span class="tag tag-red">regression</span></td>
+              <td>development</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Ready To Do</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/TOP-3400/homepage-blurry-hero-images-on-desktop" target="_blank">Homepage: Blurry Hero Images on Desktop</a></td>
+              <td>(main)</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>production</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Triage</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/TOP-3391/missing-attribution-data-on-shopify-order-details" target="_blank">Missing attribution data on Shopify order details</a></td>
+              <td>(main)</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#ea580c">high</span></td>
+              <td>In Review</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/TOP-3382/update-topps-footer-navigation-icon" target="_blank">Update Topps footer navigation icon</a></td>
+              <td>(main)</td>
+              <td><span class="tag tag-red">regression</span></td>
+              <td>production</td>
+              <td><span style="color:#ca8a04">medium</span></td>
+              <td>Ready To Do</td>
+            </tr>
+        </tbody>
+      </table>
+      
+    </section>
+  </div>
+  <div class="page" id="page-qa" style="display:none">
+    <button class="back-btn" onclick="showHome()">&larr; Back to Overview</button>
+    <div class="page-header">
+      <h2>QA</h2>
+      <div class="grade-badge grade-b">B</div>
+    </div>
+
+    <div class="kpi-grid kpi-grid-4">
+      <div class="kpi"><div class="value">5</div><div class="label">Total Bugs</div><div class="detail">2 triage · 1 open</div></div>
+      <div class="kpi danger"><div class="value">1</div><div class="label">Regressions</div></div>
+      <div class="kpi info"><div class="value">0</div><div class="label">Progressions</div></div>
+      <div class="kpi"><div class="value">1</div><div class="label">Sub-teams</div></div>
+    </div>
+
+    <section>
+      <h3>Bug Breakdown by Sub-team</h3>
+      <table>
+        <thead><tr><th>Sub-team</th><th>Total</th><th>Triage</th><th>Open</th><th>Regr.</th><th>Regr. %</th></tr></thead>
+        <tbody><tr>
+        <td>(main)</td>
+        <td><a href="https://linear.app/fanaticscollect/team/QA/all" target="_blank">5</a></td>
+        <td><a href="https://linear.app/fanaticscollect/team/QA/triage" target="_blank" class="status-yellow">2</a></td>
+        <td><a href="https://linear.app/fanaticscollect/team/QA/active" target="_blank" class="status-green">1</a></td>
+        <td><a href="https://linear.app/fanaticscollect/team/QA/all?label=Regression%20bug" target="_blank" class="status-red">1</a></td>
+        <td><span class="status-yellow">20%</span></td>
+      </tr></tbody>
+      </table>
+    </section>
+
+    <div class="grid-2">
+      <section>
+        <h3>By Environment</h3>
+        <div class="bar-row"><span class="bar-label">unspecified</span><div class="bar-track"><div class="bar-fill" style="width:100%;background:#6366f1"></div><span class="bar-value">4</span></div></div><div class="bar-row"><span class="bar-label">development</span><div class="bar-track"><div class="bar-fill" style="width:25%;background:#6366f1"></div><span class="bar-value">1</span></div></div>
+      </section>
+      <section>
+        <h3>By Severity</h3>
+        <div class="bar-row"><span class="bar-label">low</span><div class="bar-track"><div class="bar-fill" style="width:100%;background:#ea580c"></div><span class="bar-value">4</span></div></div><div class="bar-row"><span class="bar-label">high</span><div class="bar-track"><div class="bar-fill" style="width:25%;background:#ea580c"></div><span class="bar-value">1</span></div></div>
+      </section>
+    </div>
+
+    <section>
+      <h3>Recent Bugs</h3>
+      <table class="bug-table">
+        <thead><tr><th>Title</th><th>Sub-team</th><th>Type</th><th>Env</th><th>Severity</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/QA-588/scanned-card-uip-image-shows-card-and-slab-once-added-to-collection" target="_blank">Scanned card UIP image shows card &amp; slab. Once added to Collection ...</a></td>
+              <td>(main)</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Triage</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/QA-582/ranger-marketplace-listing-pages-show-out-of-stock-for-items-actively" target="_blank">[Ranger] Marketplace listing pages show &quot;Out of Stock&quot; for items ac...</a></td>
+              <td>(main)</td>
+              <td><span class="tag tag-red">regression</span></td>
+              <td>development</td>
+              <td><span style="color:#ea580c">high</span></td>
+              <td>in testing</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/QA-576/add-to-collection-button-is-floating-in-the-middle-of-screen" target="_blank">Add to collection button is floating in the middle of screen.</a></td>
+              <td>(main)</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Canceled</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/QA-571/lost-my-search-reverted-away-from-it" target="_blank">Lost my search; reverted away from it</a></td>
+              <td>(main)</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Triage</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/QA-570/cant-type-the-numbers-i-want-for-the-offer-price-2-wont-fire" target="_blank">Can’t type the numbers I want for the offer price. 2 won’t fire.</a></td>
+              <td>(main)</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#6b7280">low</span></td>
+              <td>Canceled</td>
+            </tr>
+        </tbody>
+      </table>
+      
+    </section>
+  </div>
+  <div class="page" id="page-platform" style="display:none">
+    <button class="back-btn" onclick="showHome()">&larr; Back to Overview</button>
+    <div class="page-header">
+      <h2>Platform</h2>
+      <div class="grade-badge grade-a">A</div>
+    </div>
+
+    <div class="kpi-grid kpi-grid-4">
+      <div class="kpi"><div class="value">3</div><div class="label">Total Bugs</div><div class="detail">0 triage · 1 open</div></div>
+      <div class="kpi danger"><div class="value">0</div><div class="label">Regressions</div></div>
+      <div class="kpi info"><div class="value">0</div><div class="label">Progressions</div></div>
+      <div class="kpi"><div class="value">1</div><div class="label">Sub-teams</div></div>
+    </div>
+
+    <section>
+      <h3>Bug Breakdown by Sub-team</h3>
+      <table>
+        <thead><tr><th>Sub-team</th><th>Total</th><th>Triage</th><th>Open</th><th>Regr.</th><th>Regr. %</th></tr></thead>
+        <tbody><tr>
+        <td>(main)</td>
+        <td><a href="https://linear.app/fanaticscollect/team/PLA/all" target="_blank">3</a></td>
+        <td><span class="zero">0</span></td>
+        <td><a href="https://linear.app/fanaticscollect/team/PLA/active" target="_blank" class="status-green">1</a></td>
+        <td><span class="zero">0</span></td>
+        <td><span class="">0%</span></td>
+      </tr></tbody>
+      </table>
+    </section>
+
+    <div class="grid-2">
+      <section>
+        <h3>By Environment</h3>
+        <div class="bar-row"><span class="bar-label">unspecified</span><div class="bar-track"><div class="bar-fill" style="width:100%;background:#6366f1"></div><span class="bar-value">3</span></div></div>
+      </section>
+      <section>
+        <h3>By Severity</h3>
+        <div class="bar-row"><span class="bar-label">medium</span><div class="bar-track"><div class="bar-fill" style="width:100%;background:#ea580c"></div><span class="bar-value">3</span></div></div>
+      </section>
+    </div>
+
+    <section>
+      <h3>Recent Bugs</h3>
+      <table class="bug-table">
+        <thead><tr><th>Title</th><th>Sub-team</th><th>Type</th><th>Env</th><th>Severity</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/PLA-1013/optimize-collectvaultitems-iosvaultitemlistquery-performance" target="_blank">Optimize collectVaultItems iosVaultItemListQuery performance</a></td>
+              <td>(main)</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#ca8a04">medium</span></td>
+              <td>Backlog</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/PLA-1005/add-index-on-live-stream-manifestslive-stream-id" target="_blank">Add index on live_stream_manifests.live_stream_id</a></td>
+              <td>(main)</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#ca8a04">medium</span></td>
+              <td>Done</td>
+            </tr><tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/PLA-991/optimize-getitemsincollection-item-lookup-query" target="_blank">Optimize getItemsInCollection item lookup query</a></td>
+              <td>(main)</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#ca8a04">medium</span></td>
+              <td>Done</td>
+            </tr>
+        </tbody>
+      </table>
+      
+    </section>
+  </div>
+  <div class="page" id="page-collect-app" style="display:none">
+    <button class="back-btn" onclick="showHome()">&larr; Back to Overview</button>
+    <div class="page-header">
+      <h2>Collect App</h2>
+      <div class="grade-badge grade-c">C</div>
+    </div>
+
+    <div class="kpi-grid kpi-grid-4">
+      <div class="kpi"><div class="value">1</div><div class="label">Total Bugs</div><div class="detail">0 triage · 1 open</div></div>
+      <div class="kpi danger"><div class="value">0</div><div class="label">Regressions</div></div>
+      <div class="kpi info"><div class="value">0</div><div class="label">Progressions</div></div>
+      <div class="kpi"><div class="value">1</div><div class="label">Sub-teams</div></div>
+    </div>
+
+    <section>
+      <h3>Bug Breakdown by Sub-team</h3>
+      <table>
+        <thead><tr><th>Sub-team</th><th>Total</th><th>Triage</th><th>Open</th><th>Regr.</th><th>Regr. %</th></tr></thead>
+        <tbody><tr>
+        <td>Backend</td>
+        <td><a href="https://linear.app/fanaticscollect/team/LCB/all" target="_blank">1</a></td>
+        <td><span class="zero">0</span></td>
+        <td><a href="https://linear.app/fanaticscollect/team/LCB/active" target="_blank" class="status-green">1</a></td>
+        <td><span class="zero">0</span></td>
+        <td><span class="">0%</span></td>
+      </tr></tbody>
+      </table>
+    </section>
+
+    <div class="grid-2">
+      <section>
+        <h3>By Environment</h3>
+        <div class="bar-row"><span class="bar-label">unspecified</span><div class="bar-track"><div class="bar-fill" style="width:100%;background:#6366f1"></div><span class="bar-value">1</span></div></div>
+      </section>
+      <section>
+        <h3>By Severity</h3>
+        <div class="bar-row"><span class="bar-label">medium</span><div class="bar-track"><div class="bar-fill" style="width:100%;background:#ea580c"></div><span class="bar-value">1</span></div></div>
+      </section>
+    </div>
+
+    <section>
+      <h3>Recent Bugs</h3>
+      <table class="bug-table">
+        <thead><tr><th>Title</th><th>Sub-team</th><th>Type</th><th>Env</th><th>Severity</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr>
+              <td><a href="https://linear.app/fanaticscollect/issue/LCB-5109/fix-n1-in-androidcollectrecentlyviewedlistingsquery" target="_blank">Fix N+1 in AndroidCollectRecentlyViewedListingsQuery</a></td>
+              <td>Backend</td>
+              <td><span class="tag tag-gray">unknown</span></td>
+              <td>unspecified</td>
+              <td><span style="color:#ca8a04">medium</span></td>
+              <td>Backlog</td>
+            </tr>
+        </tbody>
+      </table>
+      
+    </section>
+  </div>
+
+</div>
+
+<div class="footer">
+  Generated on Thursday, April 30, 2026
+  · Powered by LLM Council
+</div>
+
+<script>
+function showPage(id) {
+  document.getElementById('page-home').style.display = 'none';
+  document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
+  const el = document.getElementById('page-' + id);
+  if (el) { el.style.display = 'block'; window.scrollTo(0, 0); }
+}
+function showHome() {
+  document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
+  document.getElementById('page-home').style.display = 'block';
+  window.scrollTo(0, 0);
+}
+</script>
+
+</body>
+</html>
