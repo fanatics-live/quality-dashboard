@@ -18,7 +18,10 @@
     "council": "tsx src/cli.ts",
     "dashboard": "tsx src/dashboard/cli.ts --serve",
     "dashboard:no-council": "tsx src/dashboard/cli.ts --serve --no-council",
-    "dashboard:build": "tsx src/dashboard/cli.ts --no-council"
+    "dashboard:build": "tsx src/dashboard/cli.ts --no-council",
+    "web": "npm --prefix web run dev",
+    "web:build": "npm --prefix web run build",
+    "web:start": "npm --prefix web run start"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.80.0",
