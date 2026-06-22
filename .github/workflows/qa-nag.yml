@@ -35,4 +35,10 @@ jobs:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
           SLACK_QA_CHANNEL: ${{ secrets.SLACK_QA_CHANNEL }}
           QA_NAG_DAYS: "90"
-        run: npx tsx scripts/qa-nag.ts ${{ inputs.dry_run && '--dry-run' || '' }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          if [ "$DRY_RUN" = "true" ]; then
+            npx tsx scripts/qa-nag.ts --dry-run
+          else
+            npx tsx scripts/qa-nag.ts
+          fi
