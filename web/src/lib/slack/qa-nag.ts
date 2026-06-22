@@ -13,7 +13,9 @@ export const QA_BY_VERTICAL: Record<string, string[]> = {
   Topps: ["U08RZJWB2MC", "U08RQ1XE8QH", "U07THRG2002"],
 };
 
-const MAX_BUGS_PER_VERTICAL = 15;
+// Slack hard-caps a section's text at 3000 chars; stay under it so the
+// list is never truncated — long verticals spill into extra section blocks.
+const SECTION_CHAR_BUDGET = 2800;
 
 export function linearKey(url: string): string {
   const m = url.match(/\/issue\/([^/]+)/);
@@ -97,18 +99,23 @@ export function buildDigest(bugs: LinearBug[]): Digest {
   for (const [vertical, list] of grouped) {
     const tag = mentions(vertical);
     const head = `*${vertical}* — ${list.length} bug${list.length > 1 ? "s" : ""}${tag ? ` · ${tag}` : ""}`;
-    const lines = list.slice(0, MAX_BUGS_PER_VERTICAL).map((b) => {
+    const lines = list.map((b) => {
       const miss = missingLabels(b).join(", ");
       return `• <${b.url}|${linearKey(b.url)}> — _missing: ${miss}_`;
     });
-    if (list.length > MAX_BUGS_PER_VERTICAL) {
-      lines.push(`• … +${list.length - MAX_BUGS_PER_VERTICAL} more`);
-    }
     blocks.push({ type: "divider" });
-    blocks.push({
-      type: "section",
-      text: { type: "mrkdwn", text: `${head}\n${lines.join("\n")}` },
-    });
+    // Pack lines into one or more section blocks, never exceeding Slack's
+    // per-section char limit, so every bug is listed (no "+N more").
+    let chunk = head;
+    for (const line of lines) {
+      if (chunk.length + 1 + line.length > SECTION_CHAR_BUDGET) {
+        blocks.push({ type: "section", text: { type: "mrkdwn", text: chunk } });
+        chunk = line;
+      } else {
+        chunk += `\n${line}`;
+      }
+    }
+    blocks.push({ type: "section", text: { type: "mrkdwn", text: chunk } });
   }
 
   const text =
