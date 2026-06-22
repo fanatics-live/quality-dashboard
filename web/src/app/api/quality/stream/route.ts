@@ -4,7 +4,7 @@ import type { RangePreset } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
-const VALID_RANGES = new Set(["7d", "14d", "30d", "quarter"]);
+const VALID_RANGES = new Set(["7d", "14d", "30d", "quarter", "cycle"]);
 
 export async function GET(request: Request) {
   const url = new URL(request.url);

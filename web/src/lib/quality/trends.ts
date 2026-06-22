@@ -2,23 +2,23 @@ import type {
   LinearBug,
   IncidentRecord,
   QaseProjectMetrics,
+  CycleDates,
   Delta,
   TimePoint,
   VerticalTrend,
   TrendData,
   RangePreset,
-  DashboardData,
 } from "../types";
-import { isOpen } from "../integrations/linear";
+import { isOpen, isValidBug, isClassificationBug } from "../integrations/linear";
 
-const RANGE_DAYS: Record<RangePreset, number> = {
+const RANGE_DAYS: Record<string, number> = {
   "7d": 7,
   "14d": 14,
   "30d": 30,
   quarter: 90,
 };
 
-function makeDelta(
+export function makeDelta(
   current: number,
   previous: number,
   lowerIsBetter: boolean,
@@ -59,8 +59,17 @@ function inRange(dateStr: string, from: Date, to: Date): boolean {
   return d >= from && d <= to;
 }
 
-export function computeRangeDates(range: RangePreset, now = new Date()) {
-  const days = RANGE_DAYS[range];
+export function computeRangeDates(range: RangePreset, now = new Date(), cycleDates?: CycleDates) {
+  if (range === "cycle" && cycleDates) {
+    const currentStart = new Date(cycleDates.currentStart);
+    const currentEnd = new Date(cycleDates.currentEnd);
+    const previousStart = new Date(cycleDates.previousStart);
+    const previousEnd = new Date(cycleDates.previousEnd);
+    const days = Math.round((currentEnd.getTime() - currentStart.getTime()) / 86_400_000);
+    return { currentStart, currentEnd, previousStart, previousEnd, fetchFrom: previousStart, days };
+  }
+
+  const days = RANGE_DAYS[range] ?? 14;
   const currentEnd = new Date(now);
   const currentStart = new Date(now);
   currentStart.setDate(currentStart.getDate() - days);
@@ -81,12 +90,14 @@ export function computeTrends(
   allIncidents: IncidentRecord[],
   allQase: QaseProjectMetrics[],
   now = new Date(),
+  cycleDates?: CycleDates,
 ): TrendData {
   const { currentStart, currentEnd, previousStart, previousEnd, days } =
-    computeRangeDates(range, now);
+    computeRangeDates(range, now, cycleDates);
 
-  const curBugs = allBugs.filter((b) => inRange(b.createdAt, currentStart, currentEnd));
-  const prevBugs = allBugs.filter((b) => inRange(b.createdAt, previousStart, previousEnd));
+  const validBugs = allBugs.filter(isValidBug);
+  const curBugs = validBugs.filter((b) => inRange(b.createdAt, currentStart, currentEnd));
+  const prevBugs = validBugs.filter((b) => inRange(b.createdAt, previousStart, previousEnd));
 
   const curIncidents = allIncidents.filter((i) => inRange(i.createdAt, currentStart, currentEnd));
   const prevIncidents = allIncidents.filter((i) => inRange(i.createdAt, previousStart, previousEnd));
@@ -103,13 +114,39 @@ export function computeTrends(
     prevBugs.filter((b) => b.type === "regression").length,
     true,
   );
+  const progressions = makeDelta(
+    curBugs.filter((b) => b.type === "progression").length,
+    prevBugs.filter((b) => b.type === "progression").length,
+    true,
+  );
+  const unknownType = makeDelta(
+    curBugs.filter((b) => b.type === "unknown").length,
+    prevBugs.filter((b) => b.type === "unknown").length,
+    true,
+  );
 
   // Incident delta
   const incidents = makeDelta(curIncidents.length, prevIncidents.length, true);
 
-  // MTTR delta
-  const curResolved = curBugs.filter((b) => b.resolvedAt);
-  const prevResolved = prevBugs.filter((b) => b.resolvedAt);
+  // Classification-scoped deltas (same population as the classification boards)
+  const curClassified = curBugs.filter(isClassificationBug);
+  const prevClassified = prevBugs.filter(isClassificationBug);
+  const classDelta = (type: LinearBug["type"]) =>
+    makeDelta(
+      curClassified.filter((b) => b.type === type).length,
+      prevClassified.filter((b) => b.type === type).length,
+      true,
+    );
+  const classification = {
+    regressions: classDelta("regression"),
+    progressions: classDelta("progression"),
+    unknown: classDelta("unknown"),
+  };
+
+  // MTTR delta — bugs RESOLVED in each window (avoids survivorship bias
+  // of only counting bugs both created and resolved within the window)
+  const curResolved = validBugs.filter((b) => b.resolvedAt && inRange(b.resolvedAt, currentStart, currentEnd));
+  const prevResolved = validBugs.filter((b) => b.resolvedAt && inRange(b.resolvedAt, previousStart, previousEnd));
   const curMttr =
     curResolved.length > 0
       ? Math.round(
@@ -135,37 +172,59 @@ export function computeTrends(
   const curRuns = allRuns.filter((r) => inRange(r.startTime, currentStart, currentEnd));
   const prevRuns = allRuns.filter((r) => inRange(r.startTime, previousStart, previousEnd));
   const avgPassRate = (runs: typeof allRuns) => {
-    if (runs.length === 0) return 0;
-    const rates = runs.map((r) => (r.stats.total > 0 ? (r.stats.passed / r.stats.total) * 100 : 0));
-    return Math.round(rates.reduce((a, b) => a + b, 0) / rates.length);
+    const total = runs.reduce((s, r) => s + r.stats.total, 0);
+    if (total === 0) return 0;
+    const passed = runs.reduce((s, r) => s + r.stats.passed, 0);
+    return Math.round((passed / total) * 100);
   };
   const passRate = makeDelta(avgPassRate(curRuns), avgPassRate(prevRuns), false);
 
-  // Coverage: cumulative, snapshot-style. Use current value only.
-  const totalCases = allQase.reduce((s, p) => s + p.totalCases, 0);
-  const automatedCases = allQase.reduce((s, p) => s + p.automatedCases, 0);
-  const covPct = totalCases > 0 ? Math.round((automatedCases / totalCases) * 100) : 0;
-  const coverage = makeDelta(covPct, covPct, false);
-
-  // Time series: daily bug + incident counts for the current period
+  // Time series: daily + cumulative bug counts and daily incident counts
   const timeSeries: TimePoint[] = [];
+  let cumBugs = 0;
+  let cumRegressions = 0;
   for (let d = 0; d < days; d++) {
     const date = new Date(currentStart);
     date.setDate(date.getDate() + d);
     const key = dayKey(date.toISOString());
+    const dayBugs = curBugs.filter((b) => dayKey(b.createdAt) === key).length;
+    const dayReg = curBugs.filter((b) => dayKey(b.createdAt) === key && b.type === "regression").length;
+    cumBugs += dayBugs;
+    cumRegressions += dayReg;
     timeSeries.push({
       date: key,
-      bugs: curBugs.filter((b) => dayKey(b.createdAt) === key).length,
-      regressions: curBugs.filter((b) => dayKey(b.createdAt) === key && b.type === "regression").length,
+      bugs: dayBugs,
+      regressions: dayReg,
       incidents: curIncidents.filter((i) => dayKey(i.createdAt) === key).length,
+      cumulativeBugs: cumBugs,
+      cumulativeRegressions: cumRegressions,
     });
   }
+
+  // Map Linear team key (issue prefix, e.g. "LB" in "LB-1959") to its vertical,
+  // so incidents linked to a Linear ticket can be attributed to a vertical.
+  const teamVertical = new Map<string, string>();
+  for (const b of validBugs) teamVertical.set(b.teamKey, b.vertical);
+  const incidentVertical = (i: IncidentRecord): string | undefined => {
+    const prefix = i.linearKey?.split("-")[0];
+    return prefix ? teamVertical.get(prefix) : undefined;
+  };
 
   // Per-vertical trends
   const verticalNames = new Set([...curBugs.map((b) => b.vertical), ...prevBugs.map((b) => b.vertical)]);
   const verticalTrends: VerticalTrend[] = [...verticalNames].map((name) => {
     const vc = curBugs.filter((b) => b.vertical === name);
     const vp = prevBugs.filter((b) => b.vertical === name);
+    const vci = curIncidents.filter((i) => incidentVertical(i) === name);
+    const vpi = prevIncidents.filter((i) => incidentVertical(i) === name);
+    const vcClass = curClassified.filter((b) => b.vertical === name);
+    const vpClass = prevClassified.filter((b) => b.vertical === name);
+    const vClassDelta = (type: LinearBug["type"]) =>
+      makeDelta(
+        vcClass.filter((b) => b.type === type).length,
+        vpClass.filter((b) => b.type === type).length,
+        true,
+      );
     return {
       name,
       bugs: makeDelta(vc.length, vp.length, true),
@@ -175,6 +234,17 @@ export function computeTrends(
         vp.filter((b) => b.type === "regression").length,
         true,
       ),
+      progressions: makeDelta(
+        vc.filter((b) => b.type === "progression").length,
+        vp.filter((b) => b.type === "progression").length,
+        true,
+      ),
+      incidents: makeDelta(vci.length, vpi.length, true),
+      classification: {
+        regressions: vClassDelta("regression"),
+        progressions: vClassDelta("progression"),
+        unknown: vClassDelta("unknown"),
+      },
     };
   }).sort((a, b) => b.bugs.current - a.bugs.current);
 
@@ -185,10 +255,12 @@ export function computeTrends(
     bugs,
     openBugs,
     regressions,
+    progressions,
+    unknownType,
     incidents,
     mttr,
     passRate,
-    coverage,
+    classification,
     timeSeries,
     verticalTrends,
   };

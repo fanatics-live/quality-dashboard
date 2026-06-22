@@ -8,6 +8,7 @@ const PRESETS: { value: RangePreset; label: string }[] = [
   { value: "14d", label: "14D" },
   { value: "30d", label: "30D" },
   { value: "quarter", label: "Quarter" },
+  { value: "cycle", label: "Cycle" },
 ];
 
 export function RangeSelector({

@@ -19,9 +19,9 @@ export function Header({ period, grade, cachedAt }: { period: { start: string; e
     <header className="bg-gradient-to-r from-indigo-950 to-indigo-800 text-white print:bg-indigo-950">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Quality Dashboard</h1>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Product Quality Intelligence</h1>
           <p className="text-indigo-200 text-xs sm:text-sm mt-0.5">
-            Weekly Quality Report — Fanatics Live
+            Fanatics Live
             {cachedAt && (
               <span className={isStale ? "text-amber-300 ml-2" : "text-indigo-300 ml-2"}>
                 · Updated {formatAge(cachedAt)}

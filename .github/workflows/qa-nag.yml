@@ -1,0 +1,38 @@
+name: QA label-hygiene digest
+
+# Posts a Slack digest of open bugs missing mandatory labels
+# (Bug type / Severity / Environment) for QA-owned verticals.
+on:
+  schedule:
+    # 07:00 UTC every Tuesday and Thursday (~09:00 Paris in summer, 08:00 in winter)
+    - cron: "0 7 * * 2,4"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Preview only (post nothing to Slack)"
+        type: boolean
+        default: false
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npm install --no-audit --no-fund
+
+      - name: Send QA digest
+        env:
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+          LINEAR_ALL_ISSUES_TEAMS: ${{ secrets.LINEAR_ALL_ISSUES_TEAMS }}
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_QA_CHANNEL: ${{ secrets.SLACK_QA_CHANNEL }}
+          QA_NAG_DAYS: "90"
+        run: npx tsx scripts/qa-nag.ts ${{ inputs.dry_run && '--dry-run' || '' }}

@@ -7,12 +7,13 @@ export interface LinearBug {
   subteam: string;
   type: "regression" | "progression" | "unknown";
   environment: string;
-  severity: "critical" | "high" | "medium" | "low";
+  severity: string;
   status: string;
   stateType: "triage" | "backlog" | "unstarted" | "started" | "completed" | "canceled";
   createdAt: string;
   resolvedAt?: string;
   url: string;
+  releaseBlocker: boolean;
 }
 
 export interface TeamStats {
@@ -43,6 +44,7 @@ export interface IncidentRecord {
   durationMinutes?: number;
   incidentType?: string;
   url: string;
+  linearKey?: string;
 }
 
 export interface QaseTestRun {
@@ -104,17 +106,46 @@ export interface AutomationMetrics {
   projects: QaseProjectMetrics[];
 }
 
+export interface ServiceHealth {
+  httpErrorRate: number;
+  httpApdex: number;
+  httpAvgLatency: number;
+  httpRequests: number;
+  graphqlErrorRate: number;
+  graphqlErrorCount: number;
+  graphqlApdex: number;
+  graphqlAvgLatency: number;
+  graphqlRequests: number;
+  grpcApdex: number;
+  grpcRequests: number;
+  appErrors: number;
+  dbDisconnects: number;
+  overallApdex: number;
+  overallErrorRate: number;
+  totalRequests: number;
+  iosCrashFreeRate: number | null;
+  androidCrashFreeRate: number | null;
+}
+
 export interface DashboardData {
   generatedAt: string;
   period: { start: string; end: string };
   bugs: BugMetrics;
   incidents: IncidentMetrics;
   automation: AutomationMetrics;
+  serviceHealth: ServiceHealth | null;
 }
 
 // ── Trend types ──
 
-export type RangePreset = "7d" | "14d" | "30d" | "quarter";
+export type RangePreset = "7d" | "14d" | "30d" | "quarter" | "cycle";
+
+export interface CycleDates {
+  currentStart: string;
+  currentEnd: string;
+  previousStart: string;
+  previousEnd: string;
+}
 
 export interface Delta {
   current: number;
@@ -130,6 +161,8 @@ export interface TimePoint {
   bugs: number;
   regressions: number;
   incidents: number;
+  cumulativeBugs: number;
+  cumulativeRegressions: number;
 }
 
 export interface VerticalTrend {
@@ -137,6 +170,13 @@ export interface VerticalTrend {
   bugs: Delta;
   open: Delta;
   regressions: Delta;
+  progressions: Delta;
+  incidents: Delta;
+  classification: {
+    regressions: Delta;
+    progressions: Delta;
+    unknown: Delta;
+  };
 }
 
 export interface TrendData {
@@ -146,10 +186,16 @@ export interface TrendData {
   bugs: Delta;
   openBugs: Delta;
   regressions: Delta;
+  progressions: Delta;
+  unknownType: Delta;
   incidents: Delta;
   mttr: Delta;
   passRate: Delta;
-  coverage: Delta;
+  classification: {
+    regressions: Delta;
+    progressions: Delta;
+    unknown: Delta;
+  };
   timeSeries: TimePoint[];
   verticalTrends: VerticalTrend[];
 }
@@ -160,7 +206,7 @@ export interface DashboardWithTrends {
   cachedAt?: string;
 }
 
-export type SourceId = "linear" | "incident" | "qase" | "processing";
+export type SourceId = "linear" | "incident" | "qase" | "datadog" | "processing";
 export type SourceStatus = "waiting" | "loading" | "done" | "skipped" | "error";
 
 export interface ProgressEvent {
@@ -169,7 +215,97 @@ export interface ProgressEvent {
   detail?: string;
 }
 
+export interface SourceError {
+  source: SourceId;
+  message: string;
+}
+
 export type Grade = "A" | "B" | "C" | "D" | "E";
+
+// ── Executive metrics ──
+
+export interface HealthSubScore {
+  score: number;
+  weight: number;
+  components: Record<string, number>;
+}
+
+export interface HealthScore {
+  overall: number;
+  grade: Grade;
+  stability: HealthSubScore;
+  reliability: HealthSubScore;
+  prevention: HealthSubScore;
+  delivery: HealthSubScore;
+}
+
+export interface BugAgingBuckets {
+  fresh: number;      // < 7 days
+  recent: number;     // 7–30 days
+  aging: number;      // 30–60 days
+  stale: number;      // 60–90 days
+  critical: number;   // > 90 days
+  total: number;
+}
+
+export type RiskLevel = "critical" | "high" | "watch" | "stable" | "improving";
+
+export interface TeamRisk {
+  name: string;
+  slug: string;
+  level: RiskLevel;
+  score: number;
+  signals: string[];
+  teamKey: string;
+  stats: VerticalStats;
+  bugsDelta: Delta;
+  regressionRate: number;
+  aging: BugAgingBuckets;
+  openCriticals: number;
+}
+
+export interface BugFlowRow {
+  vertical: string;
+  created: number;
+  closed: number;
+  delta: number;
+}
+
+export interface ExecSummary {
+  healthScore: HealthScore;
+  escapedDefectRate: number;
+  openCriticals: number;
+  incidentSeverityScore: number;
+  incidentsBySeverity: Record<string, number>;
+  regressionRate: number;
+  regressionsByVertical: Array<{ vertical: string; regressions: number; total: number; rate: number }>;
+  bugAging: BugAgingBuckets;
+  teamRisks: TeamRisk[];
+  customerBugs: number;
+  productionBugs: number;
+  prodBugsByVertical: Record<string, number>;
+  productionBugsList: LinearBug[];
+  openCriticalsList: LinearBug[];
+  bugFlow: { created: number; closed: number; delta: number; byVertical: BugFlowRow[] };
+  pipelineRegressionRate: number;
+  pipelineRegressionsByVertical: Array<{ vertical: string; regressions: number; total: number; rate: number }>;
+  preProdBugFlow: { created: number; closed: number; delta: number; byVertical: BugFlowRow[] };
+  preProdBugAging: BugAgingBuckets;
+  automationHealth: { coverage: number; passRate: number };
+  serviceHealth: ServiceHealth | null;
+  kr1ProdDefects: OkrVerticalComparison;
+  kr2ReleaseBlockers: OkrVerticalComparison;
+}
+
+// Q2 vs Q1 2026 per-vertical comparison for an OKR key result.
+// Counts bugs matching the KR predicate, excluding canceled/triage and
+// invalid statuses. A fixed set of non-product verticals is excluded.
+export interface OkrVerticalComparison {
+  q1Total: number;
+  q2Total: number;
+  changePercent: number | null;
+  byVertical: Array<{ vertical: string; q1: number; q2: number; changePercent: number | null }>;
+}
 
 export interface VerticalSummary {
   name: string;
@@ -177,4 +313,10 @@ export interface VerticalSummary {
   grade: Grade;
   stats: VerticalStats;
   mainTeamKey: string;
+}
+
+export interface DashboardWithTrendsV2 extends DashboardWithTrends {
+  exec: ExecSummary;
+  cycleDates?: CycleDates;
+  sourceErrors?: SourceError[];
 }

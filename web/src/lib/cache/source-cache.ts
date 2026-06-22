@@ -4,6 +4,7 @@ const SOURCE_TTL: Record<string, number> = {
   linear: 30 * 60_000,
   incident: 30 * 60_000,
   qase: 6 * 3600_000,
+  datadog: 10 * 60_000,
 };
 
 interface CachedRow {
@@ -43,7 +44,7 @@ export function clearAllCache(): void {
 }
 
 export function hasAnyStaleSources(): boolean {
-  for (const source of ["linear", "incident", "qase"]) {
+  for (const source of ["linear", "incident", "qase", "datadog"]) {
     if (!isSourceFresh(source)) return true;
   }
   return false;

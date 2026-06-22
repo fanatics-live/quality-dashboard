@@ -12,6 +12,7 @@ interface IncidentAPIResponse {
     resolved_at?: string;
     incident_type?: { name: string };
     permalink: string;
+    external_issue_reference?: { issue_name?: string };
   }>;
   pagination_meta?: { after?: string; total_record_count?: number };
 }
@@ -45,6 +46,7 @@ export async function fetchIncidents(apiKey: string, sinceDate: string): Promise
     for (const inc of data.incidents) {
       const created = new Date(inc.created_at);
       if (created < new Date(sinceDate)) continue;
+      if (inc.incident_type?.name?.toLowerCase() !== "incident") continue;
 
       allIncidents.push({
         id: inc.id,
@@ -56,6 +58,7 @@ export async function fetchIncidents(apiKey: string, sinceDate: string): Promise
         durationMinutes: computeDuration(inc.created_at, inc.resolved_at),
         incidentType: inc.incident_type?.name,
         url: inc.permalink,
+        linearKey: inc.external_issue_reference?.issue_name ?? undefined,
       });
     }
 

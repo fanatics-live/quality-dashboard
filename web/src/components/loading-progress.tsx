@@ -8,6 +8,7 @@ const SOURCE_META: Record<SourceId, { label: string; icon: string }> = {
   linear: { label: "Linear", icon: "/linear.svg" },
   incident: { label: "Incident.io", icon: "/incident.svg" },
   qase: { label: "QASE.io", icon: "/qase.svg" },
+  datadog: { label: "Datadog APM", icon: "/datadog.svg" },
   processing: { label: "Computing metrics", icon: "" },
 };
 
