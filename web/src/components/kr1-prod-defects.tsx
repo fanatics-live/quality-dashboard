@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import type { OkrVerticalComparison } from "@/lib/types";
+import { slug } from "@/lib/utils";
 import { Target, TrendingDown, TrendingUp, Minus, Info } from "lucide-react";
 
 function TrendBadge({ change }: { change: number | null }) {
@@ -34,7 +36,12 @@ function VerticalRow({ vertical, q1, q2, changePercent }: { vertical: string; q1
         onMouseEnter={() => setHover(true)}
         onMouseLeave={() => setHover(false)}
       >
-        <span className="text-xs text-slate-600 dark:text-slate-300 truncate">{vertical}</span>
+        <Link
+          href={`/verticals/${slug(vertical)}`}
+          className="text-xs text-slate-600 dark:text-slate-300 truncate hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline transition-colors"
+        >
+          {vertical}
+        </Link>
         <TrendBadge change={changePercent} />
       </div>
       {hover && (

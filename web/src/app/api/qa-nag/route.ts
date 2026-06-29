@@ -13,6 +13,9 @@ export async function GET(request: Request) {
 
   try {
     const env = getEnv();
+    // Optional destination override — lets us post a preview to a specific
+    // channel without changing SLACK_QA_CHANNEL.
+    const channel = url.searchParams.get("channel") || env.slackQaChannel;
     const since = new Date();
     since.setDate(since.getDate() - days);
 
@@ -33,7 +36,7 @@ export async function GET(request: Request) {
       });
     }
 
-    if (!env.slackBotToken || !env.slackQaChannel) {
+    if (!env.slackBotToken || !channel) {
       return NextResponse.json(
         { error: "SLACK_BOT_TOKEN or SLACK_QA_CHANNEL not configured" },
         { status: 500 },
@@ -42,7 +45,7 @@ export async function GET(request: Request) {
 
     const result = await postMessage(
       env.slackBotToken,
-      env.slackQaChannel,
+      channel,
       digest.text,
       digest.blocks,
     );

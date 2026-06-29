@@ -6,3 +6,5 @@ node_modules/
 .next/
 .claude/
 .DS_Store
+*.pem
+VM.md

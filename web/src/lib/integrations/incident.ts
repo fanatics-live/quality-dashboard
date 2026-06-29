@@ -1,6 +1,22 @@
-import type { IncidentRecord } from "../types";
+import type { IncidentRecord, IncidentCategory } from "../types";
 
 const INCIDENT_API = "https://api.incident.io/v2";
+
+// "Category" single-select custom field — classifies an incident as a
+// progression, regression, 3rd-party, or infrastructure/environment issue.
+const CATEGORY_FIELD_ID = "01KMJZ8FBKD5EZC7V5FVN1PTGG";
+
+const CATEGORY_MAP: Record<string, IncidentCategory> = {
+  "Progression": "progression",
+  "Regression": "regression",
+  "3rd Party": "thirdParty",
+  "Environment / infrastructure": "infrastructure",
+};
+
+interface CustomFieldEntry {
+  custom_field: { id: string };
+  values: Array<{ value_option?: { value: string } }>;
+}
 
 interface IncidentAPIResponse {
   incidents: Array<{
@@ -13,8 +29,15 @@ interface IncidentAPIResponse {
     incident_type?: { name: string };
     permalink: string;
     external_issue_reference?: { issue_name?: string };
+    custom_field_entries?: CustomFieldEntry[];
   }>;
   pagination_meta?: { after?: string; total_record_count?: number };
+}
+
+function classifyCategory(entries: CustomFieldEntry[] = []): IncidentCategory {
+  const entry = entries.find((e) => e.custom_field.id === CATEGORY_FIELD_ID);
+  const value = entry?.values[0]?.value_option?.value;
+  return value ? (CATEGORY_MAP[value] ?? "unknown") : "unknown";
 }
 
 async function fetchPage(apiKey: string, params: Record<string, string>): Promise<IncidentAPIResponse> {
@@ -59,6 +82,7 @@ export async function fetchIncidents(apiKey: string, sinceDate: string): Promise
         incidentType: inc.incident_type?.name,
         url: inc.permalink,
         linearKey: inc.external_issue_reference?.issue_name ?? undefined,
+        category: classifyCategory(inc.custom_field_entries),
       });
     }
 

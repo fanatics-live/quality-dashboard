@@ -11,6 +11,7 @@ export function makeBug(overrides: Partial<LinearBug> = {}): LinearBug {
     type: "unknown",
     environment: "Staging",
     severity: "Medium",
+    priority: 0,
     status: "Backlog",
     stateType: "backlog",
     createdAt: "2026-06-01T10:00:00.000Z",

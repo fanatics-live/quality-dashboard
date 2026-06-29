@@ -1,4 +1,4 @@
-import type { LinearBug, CycleDates } from "../types";
+import type { LinearBug, CycleDates, LinearProject } from "../types";
 import { withRetry } from "../retry";
 
 const LINEAR_API = "https://api.linear.app/graphql";
@@ -12,7 +12,9 @@ interface LinearIssueNode {
   completedAt?: string;
   team: { name: string; key: string };
   labels: { nodes: { name: string }[] };
+  project?: { id: string } | null;
   url: string;
+  history?: { nodes: { createdAt: string; toState?: { name: string } | null }[] };
 }
 
 interface LinearResponse {
@@ -50,9 +52,16 @@ export const BUG_LABELS = [
 
 const ACTIVE_STATES = ["triage", "backlog", "unstarted", "started", "completed", "canceled"];
 
+// The four members of the "Bug type" Linear label group. A bug carrying any of
+// these is classified; carrying none means its Bug type is missing/unclassified.
+export const BUG_TYPE_LABELS = ["Regression bug", "Progression bug", "Legacy", "3rd Party"];
+
+// The "Bug type" Linear label group has four members; anything else is unknown.
 function classifyType(labels: string[]): LinearBug["type"] {
-  if (labels.some((l) => l === "Regression bug")) return "regression";
-  if (labels.some((l) => l === "Progression bug")) return "progression";
+  if (labels.includes("Regression bug")) return "regression";
+  if (labels.includes("Progression bug")) return "progression";
+  if (labels.includes("Legacy")) return "legacy";
+  if (labels.includes("3rd Party")) return "thirdParty";
   return "unknown";
 }
 
@@ -109,10 +118,27 @@ export function parseTeamHierarchy(teamName: string): { vertical: string; subtea
   return { vertical: teamName, subteam: "" };
 }
 
+// "QA Verified" is the resolution milestone: depending on the team it maps to a
+// Linear state of type "started" OR "completed", so resolution can't be derived
+// from stateType/completedAt alone. We read issue history to find the first
+// transition into that state and treat its timestamp as the resolution time.
+const QA_VERIFIED = "qa verified";
+
 const ISSUE_FIELDS = `
   id title state { name type } priority createdAt completedAt
-  team { name key } labels { nodes { name } } url
+  team { name key } labels { nodes { name } } project { id } url
+  history(first: 50) { nodes { createdAt toState { name } } }
 `;
+
+function qaVerifiedAt(node: LinearIssueNode): string | undefined {
+  let earliest: string | undefined;
+  for (const h of node.history?.nodes ?? []) {
+    if (h.toState?.name.toLowerCase().trim() === QA_VERIFIED) {
+      if (!earliest || h.createdAt < earliest) earliest = h.createdAt;
+    }
+  }
+  return earliest;
+}
 
 async function paginateIssues(apiKey: string, filterClause: string): Promise<LinearIssueNode[]> {
   const query = `
@@ -147,12 +173,14 @@ function nodeToBug(node: LinearIssueNode): LinearBug {
     type: classifyType(labels),
     environment: classifyEnvironment(labels),
     severity: classifySeverity(labels),
+    priority: node.priority,
     status: node.state.name,
     stateType: node.state.type as LinearBug["stateType"],
     createdAt: node.createdAt,
-    resolvedAt: node.completedAt ?? undefined,
+    resolvedAt: qaVerifiedAt(node) ?? node.completedAt ?? undefined,
     url: node.url,
     releaseBlocker: labels.includes("Release Blocker"),
+    projectId: node.project?.id ?? undefined,
   };
 }
 
@@ -206,6 +234,70 @@ export async function fetchLinearBugs(
   const bugNodes = await paginateIssues(apiKey, bugFilter);
 
   return bugNodes.map(nodeToBug);
+}
+
+interface ProjectNode {
+  id: string;
+  name: string;
+  state: string;
+  progress: number;
+  startDate?: string;
+  targetDate?: string;
+  health?: string;
+  lead?: { name: string } | null;
+  teams: { nodes: { name: string }[] };
+  url: string;
+}
+
+interface ProjectsResponse {
+  data: {
+    projects: {
+      nodes: ProjectNode[];
+      pageInfo: { hasNextPage: boolean; endCursor: string };
+    };
+  };
+}
+
+export async function fetchLinearProjects(apiKey: string): Promise<LinearProject[]> {
+  const query = `
+    query($after: String) {
+      projects(first: 100 after: $after) {
+        nodes {
+          id name state progress startDate targetDate health
+          lead { name }
+          teams { nodes { name } }
+          url
+        }
+        pageInfo { hasNextPage endCursor }
+      }
+    }
+  `;
+  const nodes: ProjectNode[] = [];
+  let cursor: string | undefined;
+  while (true) {
+    const result = (await graphql(apiKey, query, { after: cursor })) as ProjectsResponse;
+    nodes.push(...result.data.projects.nodes);
+    if (!result.data.projects.pageInfo.hasNextPage) break;
+    cursor = result.data.projects.pageInfo.endCursor;
+  }
+
+  return nodes.map((n) => {
+    const verticals = [
+      ...new Set(n.teams.nodes.map((t) => parseTeamHierarchy(t.name).vertical)),
+    ];
+    return {
+      id: n.id,
+      name: n.name,
+      state: n.state,
+      progress: n.progress,
+      startDate: n.startDate ?? undefined,
+      targetDate: n.targetDate ?? undefined,
+      lead: n.lead?.name ?? undefined,
+      health: n.health ?? undefined,
+      verticals,
+      url: n.url,
+    };
+  });
 }
 
 interface CycleNode {

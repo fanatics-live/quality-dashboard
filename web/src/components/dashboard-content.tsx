@@ -13,7 +13,7 @@ import { RangeSelector } from "./range-selector";
 import { ExecQuadrants } from "./exec-quadrants";
 import { TeamRanking } from "./team-ranking";
 import { Kr1ProdDefectsSection } from "./kr1-prod-defects";
-import { linearOrgBugsUrl, linearLabelUrl } from "@/lib/quality/links";
+import { bugsToItems, incidentsToItems } from "./detail-modal";
 import { THRESHOLDS } from "@/lib/quality/thresholds";
 import { Bug, AlertTriangle, Shield, Zap, Activity, Clock, RefreshCw, Info } from "lucide-react";
 import { useState, useMemo } from "react";
@@ -48,16 +48,26 @@ export function DashboardContent({
   const incidentSparkline = trends.timeSeries.map((t) => t.incidents);
   const regressionSparkline = trends.timeSeries.map((t) => t.regressions);
 
+  const allBugItems = useMemo(() => bugsToItems(data.bugs.bugs), [data.bugs.bugs]);
+  const regressionItems = useMemo(() => bugsToItems(data.bugs.bugs.filter((b) => b.type === "regression")), [data.bugs.bugs]);
+  const resolvedBugItems = useMemo(() => bugsToItems(data.bugs.bugs.filter((b) => b.resolvedAt)), [data.bugs.bugs]);
+  const incidentItems = useMemo(() => incidentsToItems(data.incidents.incidents), [data.incidents.incidents]);
+  const escapedItems = useMemo(() => bugsToItems(exec.productionBugsList), [exec.productionBugsList]);
+
   const { classificationByType, classificationBugsByType, classificationByEnv, classificationBugsByEnv, classificationBySev, classificationBugsBySev } = useMemo(() => {
     const classificationBugs = data.bugs.bugs.filter(isClassificationBug);
     const bugsByType = {
       regression: classificationBugs.filter((b) => b.type === "regression"),
       progression: classificationBugs.filter((b) => b.type === "progression"),
+      legacy: classificationBugs.filter((b) => b.type === "legacy"),
+      thirdParty: classificationBugs.filter((b) => b.type === "thirdParty"),
       unknown: classificationBugs.filter((b) => b.type === "unknown"),
     };
     const byType = {
       regression: bugsByType.regression.length,
       progression: bugsByType.progression.length,
+      legacy: bugsByType.legacy.length,
+      thirdParty: bugsByType.thirdParty.length,
       unknown: bugsByType.unknown.length,
     };
     const byEnv: Record<string, number> = {};
@@ -147,7 +157,7 @@ export function DashboardContent({
             icon={<Bug className="w-5 h-5" />}
             delta={<DeltaBadge delta={trends.bugs} />}
             sparkline={<Sparkline data={bugSparkline} color="#6366f1" />}
-            href={linearOrgBugsUrl()}
+            modal={{ title: "Total Bugs", color: "#6366f1", items: allBugItems }}
           />
           <KpiCard
             value={data.bugs.byType.regression}
@@ -157,7 +167,7 @@ export function DashboardContent({
             icon={<AlertTriangle className="w-5 h-5" />}
             delta={<DeltaBadge delta={trends.regressions} />}
             sparkline={<Sparkline data={regressionSparkline} color="#dc2626" />}
-            href={linearLabelUrl("Regression bug")}
+            modal={{ title: "Regressions", color: "#dc2626", items: regressionItems }}
           />
           <KpiCard
             value={data.incidents.total}
@@ -167,7 +177,7 @@ export function DashboardContent({
             icon={<Shield className="w-5 h-5" />}
             delta={<DeltaBadge delta={trends.incidents} />}
             sparkline={<Sparkline data={incidentSparkline} color="#f59e0b" />}
-            href="https://app.incident.io/fanatics-live/incidents"
+            modal={{ title: "Incidents", color: "#f59e0b", items: incidentItems }}
           />
           <KpiCard
             value={`${exec.escapedDefectRate}%`}
@@ -175,7 +185,7 @@ export function DashboardContent({
             detail={`${exec.productionBugs} production bugs`}
             accent={exec.escapedDefectRate > THRESHOLDS.escapedDefectRate.bad ? "danger" : exec.escapedDefectRate > THRESHOLDS.escapedDefectRate.watch ? "warning" : "success"}
             icon={<Zap className="w-5 h-5" />}
-            href={linearOrgBugsUrl()}
+            modal={{ title: "Escaped Defects — Production Bugs", color: "#ea580c", items: escapedItems }}
           />
           <KpiCard
             value={`${data.automation.averagePassRate}%`}
@@ -189,11 +199,18 @@ export function DashboardContent({
           <KpiCard
             value={data.bugs.mttr != null ? `${data.bugs.mttr}h` : "N/A"}
             label="Bug MTTR"
-            detail="Mean time to resolve"
+            detail="Created → QA Verified"
+            info={
+              <>
+                <strong>Mean Time To Resolve</strong> — average time from a bug&rsquo;s creation to its resolution.
+                A bug is resolved when it reaches <strong>QA Verified</strong> (or <strong>Done</strong> for teams without that state).
+                Averaged over bugs resolved in this period.
+              </>
+            }
             accent={data.bugs.mttr != null && data.bugs.mttr > THRESHOLDS.bugMttrHours.danger ? "danger" : "info"}
             icon={<Clock className="w-5 h-5" />}
             delta={<DeltaBadge delta={trends.mttr} />}
-            href={linearOrgBugsUrl()}
+            modal={{ title: "Bug MTTR — Resolved Bugs", color: "#0ea5e9", items: resolvedBugItems }}
           />
         </div>
 
@@ -240,6 +257,8 @@ export function DashboardContent({
                   Group label: <strong>Bug type</strong><br />
                   <strong>Regression</strong> — &ldquo;Regression bug&rdquo;<br />
                   <strong>Progression</strong> — &ldquo;Progression bug&rdquo;<br />
+                  <strong>Legacy</strong> — &ldquo;Legacy&rdquo;<br />
+                  <strong>3rd Party</strong> — &ldquo;3rd Party&rdquo;<br />
                   <strong>Unclassified</strong> — no Bug type label
                   <span className="block mt-1.5 pt-1.5 border-t border-slate-700 text-slate-300">Open tickets only — excludes closed, released, cancelled/duplicate/invalid</span>
                   <span className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-x-4 border-x-transparent border-t-4 border-t-slate-900" />

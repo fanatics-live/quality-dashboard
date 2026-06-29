@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { X, ChevronDown } from "lucide-react";
-import type { LinearBug, IncidentRecord } from "@/lib/types";
+import type { LinearBug, IncidentRecord, IncidentCategory } from "@/lib/types";
 
 export interface ModalItem {
   id: string;
@@ -12,7 +12,18 @@ export interface ModalItem {
   subtitle: string;
   url: string;
   group: string;
+  badge?: string;
 }
+
+// "Category" is mandatory when an incident is resolved, so an unset value
+// means it simply hasn't been classified yet.
+const CATEGORY_LABEL: Record<IncidentCategory, string> = {
+  progression: "Progression",
+  regression: "Regression",
+  thirdParty: "3rd Party",
+  infrastructure: "Environment / infrastructure",
+  unknown: "Not yet set",
+};
 
 export function linearTicketKey(url: string): string {
   const m = url.match(/\/issue\/([^/]+)/);
@@ -40,14 +51,16 @@ export function incidentsToItems(incidents: IncidentRecord[]): ModalItem[] {
     subtitle: new Date(i.createdAt).toLocaleDateString(),
     url: i.url,
     group: i.severity || "Unclassified",
+    badge: CATEGORY_LABEL[i.category],
   }));
 }
 
-export function DetailModal({ title, color, items, onClose }: {
+export function DetailModal({ title, color, items, onClose, sortGroups }: {
   title: string;
   color: string;
   items: ModalItem[];
   onClose: () => void;
+  sortGroups?: (a: string, b: string) => number;
 }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
@@ -58,10 +71,12 @@ export function DetailModal({ title, color, items, onClose }: {
   const groups = (() => {
     const byGroup: Record<string, ModalItem[]> = {};
     for (const it of items) (byGroup[it.group || "Unassigned"] ??= []).push(it);
-    return Object.entries(byGroup).sort((a, b) => b[1].length - a[1].length);
+    return Object.entries(byGroup).sort((a, b) =>
+      sortGroups ? sortGroups(a[0], b[0]) : b[1].length - a[1].length,
+    );
   })();
 
-  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set(groups.map(([g]) => g)));
   const toggle = (group: string) =>
     setCollapsed((prev) => {
       const next = new Set(prev);
@@ -113,6 +128,17 @@ export function DetailModal({ title, color, items, onClose }: {
                       <div className="flex items-center gap-2">
                         <span className="text-[11px] font-mono font-semibold text-indigo-600 dark:text-indigo-400 shrink-0">{it.key}</span>
                         <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 shrink-0">{it.status}</span>
+                        {it.badge && (
+                          <span
+                            className={
+                              it.badge === "Not yet set"
+                                ? "text-[10px] px-1.5 py-0.5 rounded-full bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 italic shrink-0"
+                                : "text-[10px] px-1.5 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 shrink-0"
+                            }
+                          >
+                            {it.badge}
+                          </span>
+                        )}
                       </div>
                       <p className="text-xs text-slate-700 dark:text-slate-200 mt-0.5 line-clamp-2">{it.title}</p>
                       <p className="text-[11px] text-slate-400 mt-0.5">{it.subtitle}</p>

@@ -6,6 +6,7 @@ import type {
   AutomationMetrics,
   ServiceHealth,
   LinearBug,
+  LinearProject,
   IncidentRecord,
   QaseProjectMetrics,
   CycleDates,
@@ -13,9 +14,10 @@ import type {
   TeamStats,
   ProgressEvent,
   RangePreset,
+  EnvFilter,
   SourceError,
 } from "../types";
-import { fetchLinearBugs, fetchCycleDates, isOpen, isTriage, isValidBug } from "../integrations/linear";
+import { fetchLinearBugs, fetchCycleDates, fetchLinearProjects, isOpen, isTriage, isValidBug } from "../integrations/linear";
 import { fetchIncidents } from "../integrations/incident";
 import { fetchQaseMetrics } from "../integrations/qase";
 import { fetchDatadogMetrics, type DatadogConfig, type DatadogMetrics } from "../integrations/datadog";
@@ -79,7 +81,7 @@ function computeBugMetrics(allBugsRaw: LinearBug[]): BugMetrics {
     bySeverity[bug.severity] = (bySeverity[bug.severity] ?? 0) + 1;
   }
 
-  const resolvedWithTime = closed.filter((b) => b.resolvedAt);
+  const resolvedWithTime = bugs.filter((b) => b.resolvedAt);
   let mttr: number | null = null;
   if (resolvedWithTime.length > 0) {
     const totalHours = resolvedWithTime.reduce((sum, b) => {
@@ -374,7 +376,7 @@ function buildDashboardData(raw: RawCache, startDate: Date, endDate: Date, exclu
   };
 }
 
-const RANGE_DAYS: Record<string, number> = { "7d": 7, "14d": 14, "30d": 30, quarter: 90 };
+const RANGE_DAYS: Record<string, number> = { "14d": 14, "30d": 30, quarter: 90 };
 
 let _cycleDatesCache: { dates: CycleDates | null; ts: number } | null = null;
 const CYCLE_TTL = 30 * 60 * 1000;
@@ -386,6 +388,19 @@ async function getCycleDates(apiKey: string): Promise<CycleDates | null> {
   return dates;
 }
 
+let _projectsCache: { projects: LinearProject[]; ts: number } | null = null;
+const PROJECTS_TTL = 30 * 60 * 1000;
+
+export async function getLinearProjects(apiKey: string): Promise<LinearProject[]> {
+  if (_projectsCache && Date.now() - _projectsCache.ts < PROJECTS_TTL) return _projectsCache.projects;
+  const projects = await fetchLinearProjects(apiKey).catch((e) => {
+    console.error("[collector] projects fetch failed:", e);
+    return [] as LinearProject[];
+  });
+  _projectsCache = { projects, ts: Date.now() };
+  return projects;
+}
+
 // Single assembly path: resolves the period window (incl. cycle dates), then
 // computes dashboard data, trends and exec summary over the SAME window.
 async function assemble(
@@ -394,19 +409,26 @@ async function assemble(
   range: RangePreset,
   exclude: Set<string>,
   sourceErrors?: SourceError[],
+  env: EnvFilter = "all",
 ): Promise<DashboardWithTrendsV2> {
   const { computeTrends, computeRangeDates } = await import("./trends");
   const { computeExecSummary } = await import("./health-score");
 
+  // Environment scope: filter the bug set before any aggregation so every
+  // downstream metric (grade, trends, exec, matrices) reflects only this env.
+  const scoped: RawCache = env === "all"
+    ? raw
+    : { ...raw, bugs: raw.bugs.filter((b) => b.environment === env) };
+
   const cycleDates = range === "cycle" ? await getCycleDates(config.linearApiKey) : undefined;
   const { currentStart, currentEnd } = computeRangeDates(range, new Date(), cycleDates ?? undefined);
 
-  const data = buildDashboardData(raw, currentStart, currentEnd, exclude);
-  const trends = computeTrends(range, raw.bugs, raw.incidents, raw.qase, new Date(), cycleDates ?? undefined);
+  const data = buildDashboardData(scoped, currentStart, currentEnd, exclude);
+  const trends = computeTrends(range, scoped.bugs, scoped.incidents, scoped.qase, new Date(), cycleDates ?? undefined);
   const exec = computeExecSummary(
     data.bugs.bugs, data.incidents.incidents, data.automation,
     data.bugs.byVertical, trends.verticalTrends, data.serviceHealth,
-    raw.bugs, currentStart, currentEnd,
+    scoped.bugs, currentStart, currentEnd,
   );
   const oldest = getOldestFetchedAt();
   return {
@@ -431,14 +453,16 @@ export async function collectDashboardData(config: CollectorConfig): Promise<Das
 export async function collectWithTrends(
   config: CollectorConfig,
   range: RangePreset,
+  env: EnvFilter = "all",
 ): Promise<DashboardWithTrendsV2> {
   const raw = await fetchRaw(config);
   const exclude = new Set(config.excludeTeams.map((t) => t.toLowerCase()));
-  return assemble(raw, config, range, exclude);
+  return assemble(raw, config, range, exclude, undefined, env);
 }
 
 export function invalidateCache() {
   _rawCache = null;
+  _projectsCache = null;
   clearAllCache();
 }
 

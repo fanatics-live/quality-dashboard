@@ -14,13 +14,13 @@ const INITIAL_SOURCES: Record<SourceId, SourceState> = {
   processing: { status: "waiting" },
 };
 
-const VALID_RANGES = new Set(["7d", "14d", "30d", "quarter", "cycle"]);
+const VALID_RANGES = new Set(["14d", "30d", "quarter", "cycle"]);
 
 export function DashboardShell() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const rangeParam = searchParams.get("range") ?? "7d";
-  const range: RangePreset = VALID_RANGES.has(rangeParam) ? (rangeParam as RangePreset) : "7d";
+  const rangeParam = searchParams.get("range") ?? "14d";
+  const range: RangePreset = VALID_RANGES.has(rangeParam) ? (rangeParam as RangePreset) : "14d";
 
   const [result, setResult] = useState<DashboardWithTrendsV2 | null>(null);
   const [sources, setSources] = useState<Record<SourceId, SourceState>>(INITIAL_SOURCES);

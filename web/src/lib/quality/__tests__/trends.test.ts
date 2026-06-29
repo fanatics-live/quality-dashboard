@@ -39,10 +39,10 @@ describe("makeDelta", () => {
 
 describe("computeRangeDates", () => {
   it("builds back-to-back windows for preset ranges", () => {
-    const r = computeRangeDates("7d", NOW);
-    expect(r.days).toBe(7);
+    const r = computeRangeDates("14d", NOW);
+    expect(r.days).toBe(14);
     expect(r.currentEnd.toISOString()).toBe(NOW.toISOString());
-    expect(r.currentStart.toISOString()).toBe("2026-06-01T12:00:00.000Z");
+    expect(r.currentStart.toISOString()).toBe("2026-05-25T12:00:00.000Z");
     expect(r.previousEnd.getTime()).toBe(r.currentStart.getTime() - 1);
     expect(r.fetchFrom.getTime()).toBe(r.previousStart.getTime());
   });
@@ -93,21 +93,21 @@ function run(id: number, startTime: string, total: number, passed: number) {
 describe("computeTrends", () => {
   const curRegression = makeBug({ id: "cur-reg", type: "regression", stateType: "triage", status: "Triage", createdAt: "2026-06-03T10:00:00.000Z" });
   const curReleaseReady = makeBug({ id: "cur-rr", stateType: "started", status: "Release Ready", createdAt: "2026-06-05T10:00:00.000Z" });
-  const prevRegression = makeBug({ id: "prev-reg", type: "regression", stateType: "backlog", createdAt: "2026-05-28T10:00:00.000Z" });
+  const prevRegression = makeBug({ id: "prev-reg", type: "regression", stateType: "backlog", createdAt: "2026-05-18T10:00:00.000Z" });
   const duplicate = makeBug({ id: "dup", status: "Duplicate", createdAt: "2026-06-04T10:00:00.000Z" });
-  // Created BEFORE the current window, resolved inside it: 360h to resolve
+  // Created BEFORE both windows, resolved inside the current one: 720h to resolve
   const oldResolved = makeBug({
     id: "old-resolved",
     stateType: "completed",
     status: "Done",
-    createdAt: "2026-05-20T10:00:00.000Z",
+    createdAt: "2026-05-05T10:00:00.000Z",
     resolvedAt: "2026-06-04T10:00:00.000Z",
   });
 
   const bugs = [curRegression, curReleaseReady, prevRegression, duplicate, oldResolved];
 
   it("counts valid bugs per window and excludes rejected statuses", () => {
-    const t = computeTrends("7d", bugs, [], [], NOW);
+    const t = computeTrends("14d", bugs, [], [], NOW);
     expect(t.bugs.current).toBe(2); // cur-reg + cur-rr (duplicate excluded, old-resolved outside window)
     expect(t.bugs.previous).toBe(1); // prev-reg
     expect(t.regressions.current).toBe(1);
@@ -115,15 +115,15 @@ describe("computeTrends", () => {
   });
 
   it("computes classification deltas with the classification scope (open-only, release-ready excluded)", () => {
-    const t = computeTrends("7d", bugs, [], [], NOW);
+    const t = computeTrends("14d", bugs, [], [], NOW);
     expect(t.classification.regressions.current).toBe(1);
     expect(t.classification.unknown.current).toBe(0); // cur-rr is Release Ready → excluded
     expect(t.classification.regressions.previous).toBe(1);
   });
 
   it("computes MTTR from bugs resolved in the window, not created in it", () => {
-    const t = computeTrends("7d", bugs, [], [], NOW);
-    expect(t.mttr.current).toBe(360); // old-resolved: 15 days
+    const t = computeTrends("14d", bugs, [], [], NOW);
+    expect(t.mttr.current).toBe(720); // old-resolved: 30 days
     expect(t.mttr.previous).toBe(0);
   });
 
@@ -131,16 +131,16 @@ describe("computeTrends", () => {
     const projects = [qaseProject([
       run(1, "2026-06-02T10:00:00.000Z", 100, 90),
       run(2, "2026-06-03T10:00:00.000Z", 10, 0),
-      run(3, "2026-05-27T10:00:00.000Z", 50, 50),
+      run(3, "2026-05-20T10:00:00.000Z", 50, 50),
     ])];
-    const t = computeTrends("7d", [], [], projects, NOW);
+    const t = computeTrends("14d", [], [], projects, NOW);
     expect(t.passRate.current).toBe(82); // 90/110, not avg(90%, 0%) = 45
     expect(t.passRate.previous).toBe(100);
   });
 
   it("produces one time-series point per day of the window", () => {
-    const t = computeTrends("7d", bugs, [], [], NOW);
-    expect(t.timeSeries).toHaveLength(7);
+    const t = computeTrends("14d", bugs, [], [], NOW);
+    expect(t.timeSeries).toHaveLength(14);
     const total = t.timeSeries.reduce((s, p) => s + p.bugs, 0);
     expect(total).toBe(2);
     expect(t.timeSeries.at(-1)?.cumulativeBugs).toBe(2);

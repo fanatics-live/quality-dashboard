@@ -7,7 +7,7 @@ const envSchema = z.object({
   QASE_PROJECT_CODES: z.string().min(1),
   DASHBOARD_EXCLUDE_TEAMS: z.string().optional().default(""),
   LINEAR_ALL_ISSUES_TEAMS: z.string().optional().default(""),
-  DASHBOARD_PERIOD_DAYS: z.string().optional().default("7"),
+  DASHBOARD_PERIOD_DAYS: z.string().optional().default("14"),
   DATADOG_API_KEY: z.string().optional().default(""),
   DATADOG_APP_KEY: z.string().optional().default(""),
   DATADOG_SITE: z.string().optional().default("datadoghq.com"),

@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { BUG_LABELS } from "./linear";
+import { BUG_LABELS, BUG_TYPE_LABELS } from "./linear";
 
 const LINEAR_API = "https://api.linear.app/graphql";
 const LINEAR_ORG = "fanaticscollect";
@@ -155,7 +155,7 @@ export async function getViewUrl(apiKey: string, viewType: string, value?: strin
         return ensureView(apiKey, "type-unclassified", `${VIEW_PREFIX}Unclassified Bugs`, {
           and: [
             bugLabelFilter(),
-            { labels: { every: { name: { nin: ["Regression bug", "Progression bug"] } } } },
+            { labels: { every: { name: { nin: BUG_TYPE_LABELS } } } },
             ACTIVE_STATE_FILTER,
           ],
         });

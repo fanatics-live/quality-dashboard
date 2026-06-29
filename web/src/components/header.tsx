@@ -1,5 +1,4 @@
 import { GradeBadge } from "./grade-badge";
-import { ThemeToggle } from "./theme-toggle";
 import type { Grade } from "@/lib/types";
 
 function formatAge(cachedAt: string): string {
@@ -34,9 +33,6 @@ export function Header({ period, grade, cachedAt }: { period: { start: string; e
             {period.start} → {period.end}
           </span>
           <GradeBadge grade={grade} size="md" />
-          <div className="print:hidden">
-            <ThemeToggle />
-          </div>
         </div>
       </div>
     </header>

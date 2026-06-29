@@ -1,10 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import type { ExecSummary, Delta, TeamRisk, IncidentRecord } from "@/lib/types";
+import Link from "next/link";
+import type { ExecSummary, Delta, TeamRisk, IncidentRecord, LinearBug } from "@/lib/types";
 import { THRESHOLDS } from "@/lib/quality/thresholds";
 import { Shield, AlertTriangle, Users, Info } from "lucide-react";
 import { DetailModal, bugsToItems, incidentsToItems, type ModalItem } from "./detail-modal";
+
+const OPEN_STATES = new Set(["triage", "backlog", "unstarted", "started"]);
 
 function QuadrantCard({
   title,
@@ -125,6 +128,32 @@ const RISK_LABELS: Record<string, string> = {
   improving: "Improving",
 };
 
+// Per-vertical reduction levers: the concrete bugs/regressions/aging to cut to
+// lower this team's risk and lift its contribution to the overall grade. Ranked
+// by the same risk weights used in computeTeamRisks (health-score.ts).
+function verticalLevers(risk: TeamRisk): string[] {
+  const out: { text: string; weight: number }[] = [];
+
+  if (risk.openCriticals > 0) {
+    out.push({ text: `Resolve ${risk.openCriticals} critical bug${risk.openCriticals > 1 ? "s" : ""}`, weight: risk.openCriticals * 15 });
+  }
+  if (risk.regressionRate > 15) {
+    out.push({ text: `Cut regression rate (${risk.regressionRate}%)`, weight: risk.regressionRate });
+  }
+  const aged = risk.aging.aging + risk.aging.stale + risk.aging.critical;
+  if (aged > 3) {
+    out.push({ text: `Close ${aged} bug${aged > 1 ? "s" : ""} aging > 30d`, weight: aged * 3 });
+  }
+  if (risk.bugsDelta.sentiment === "bad" && risk.bugsDelta.changePercent !== null && risk.bugsDelta.changePercent > 30) {
+    out.push({ text: `Stem bug growth (+${risk.bugsDelta.changePercent}% vs prior)`, weight: risk.bugsDelta.changePercent });
+  }
+  if (risk.stats.open > 10) {
+    out.push({ text: `Reduce ${risk.stats.open} open bugs`, weight: risk.stats.open / 2 });
+  }
+
+  return out.sort((a, b) => b.weight - a.weight).map((o) => o.text);
+}
+
 export function ExecQuadrants({
   exec,
   trends,
@@ -138,6 +167,11 @@ export function ExecQuadrants({
   const incidentItems = incidentsToItems(incidents);
   const prodBugItems = bugsToItems(exec.productionBugsList);
   const criticalItems = bugsToItems(exec.openCriticalsList);
+
+  const prodOpenList = exec.productionBugsList.filter((b) => OPEN_STATES.has(b.stateType));
+  const prodOpenItems = bugsToItems(prodOpenList);
+  const prodOpenByVertical: Record<string, number> = {};
+  for (const b of prodOpenList) prodOpenByVertical[b.vertical] = (prodOpenByVertical[b.vertical] ?? 0) + 1;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -185,11 +219,11 @@ export function ExecQuadrants({
             }
           />
           <Metric
-            label="Production Bugs"
+            label="Production Bugs total"
             value={exec.productionBugs}
             sentiment={exec.productionBugs > THRESHOLDS.prodBugs.bad ? "bad" : exec.productionBugs > THRESHOLDS.prodBugs.watch ? "neutral" : "good"}
             info="Bugs found in production environment, reported in Linear."
-            modal={{ title: "Production Bugs", color: "#dc2626", items: prodBugItems }}
+            modal={{ title: "Production Bugs total", color: "#dc2626", items: prodBugItems }}
             detail={
               Object.keys(exec.prodBugsByVertical).length > 0 ? (
                 <div className="space-y-0.5">
@@ -212,6 +246,27 @@ export function ExecQuadrants({
             sentiment={exec.escapedDefectRate > THRESHOLDS.escapedDefectRate.bad ? "bad" : exec.escapedDefectRate > THRESHOLDS.escapedDefectRate.watch ? "neutral" : "good"}
             info="Percentage of environment-classified bugs that were found in production instead of being caught during QA or staging. Bugs without an environment label are excluded."
             modal={{ title: "Production Escaped Bugs", color: "#ea580c", items: prodBugItems }}
+          />
+          <Metric
+            label="Production Bugs Open"
+            value={prodOpenList.length}
+            sentiment={prodOpenList.length > THRESHOLDS.prodBugs.bad ? "bad" : prodOpenList.length > THRESHOLDS.prodBugs.watch ? "neutral" : "good"}
+            info="Production bugs that are still active (triage, backlog, or in progress) — excludes resolved/closed."
+            modal={{ title: "Production Bugs Open", color: "#dc2626", items: prodOpenItems }}
+            detail={
+              Object.keys(prodOpenByVertical).length > 0 ? (
+                <div className="space-y-0.5">
+                  {Object.entries(prodOpenByVertical)
+                    .sort(([, a], [, b]) => b - a)
+                    .map(([vertical, count]) => (
+                      <div key={vertical} className="flex justify-between gap-3">
+                        <span className="truncate">{vertical}</span>
+                        <span className="font-semibold shrink-0">{count}</span>
+                      </div>
+                    ))}
+                </div>
+              ) : undefined
+            }
           />
           <Metric
             label="Critical Open Bugs"
@@ -304,7 +359,7 @@ export function ExecQuadrants({
           />
           <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-700">
             <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">Pre-Prod Bug Aging</p>
-            <AgingBar aging={exec.preProdBugAging} />
+            <AgingBar bugs={exec.preProdBugAgingList} />
           </div>
         </div>
       </QuadrantCard>
@@ -327,6 +382,7 @@ export function ExecQuadrants({
 
 function RiskRow({ risk }: { risk: TeamRisk }) {
   const [open, setOpen] = useState(false);
+  const levers = verticalLevers(risk);
   return (
     <div
       className="relative flex items-center gap-2 py-1 rounded-md px-1 -mx-1 hover:bg-slate-50 dark:hover:bg-slate-700/40 cursor-default focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
@@ -337,7 +393,12 @@ function RiskRow({ risk }: { risk: TeamRisk }) {
       onBlur={() => setOpen(false)}
     >
       <span className={`w-2 h-2 rounded-full shrink-0 ${RISK_COLORS[risk.level]}`} />
-      <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex-1 min-w-0 truncate">{risk.name}</span>
+      <Link
+        href={`/verticals/${risk.slug}`}
+        className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex-1 min-w-0 truncate hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline transition-colors"
+      >
+        {risk.name}
+      </Link>
       <span className="text-[11px] text-slate-400 dark:text-slate-500 shrink-0">{RISK_LABELS[risk.level]}</span>
       {open && risk.signals.length > 0 && (
         <div className="absolute left-0 bottom-full mb-1.5 z-50 w-64 p-2.5 rounded-lg shadow-lg bg-slate-800 dark:bg-slate-700 text-[11px] text-slate-100 pointer-events-none">
@@ -345,6 +406,14 @@ function RiskRow({ risk }: { risk: TeamRisk }) {
           {risk.signals.map((s, i) => (
             <p key={i} className="py-0.5">• {s}</p>
           ))}
+          {levers.length > 0 && (
+            <div className="mt-2 pt-2 border-t border-slate-600/70 dark:border-slate-500/50">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-emerald-300 mb-1">Improve the grade — reduce</p>
+              {levers.map((l, i) => (
+                <p key={i} className="py-0.5 text-slate-200">→ {l}</p>
+              ))}
+            </div>
+          )}
           <div className="absolute left-4 top-full w-0 h-0 border-x-[5px] border-x-transparent border-t-[5px] border-t-slate-800 dark:border-t-slate-700" />
         </div>
       )}
@@ -352,38 +421,67 @@ function RiskRow({ risk }: { risk: TeamRisk }) {
   );
 }
 
-function AgingBar({ aging }: { aging: ExecSummary["bugAging"] }) {
-  if (aging.total === 0) {
+const AGING_BUCKETS = [
+  { key: "fresh", label: "< 7d", color: "bg-emerald-500", hex: "#10b981", max: 7 },
+  { key: "recent", label: "7-30d", color: "bg-green-400", hex: "#4ade80", max: 30 },
+  { key: "aging", label: "30-60d", color: "bg-amber-400", hex: "#fbbf24", max: 60 },
+  { key: "stale", label: "60-90d", color: "bg-orange-500", hex: "#f97316", max: 90 },
+  { key: "critical", label: "> 90d", color: "bg-red-500", hex: "#ef4444", max: Infinity },
+] as const;
+
+function bucketKey(b: LinearBug, now: number): (typeof AGING_BUCKETS)[number]["key"] {
+  const days = (now - new Date(b.createdAt).getTime()) / 86_400_000;
+  for (const bucket of AGING_BUCKETS) {
+    if (days < bucket.max) return bucket.key;
+  }
+  return "critical";
+}
+
+function AgingBar({ bugs }: { bugs: LinearBug[] }) {
+  const [modal, setModal] = useState<{ label: string; color: string; items: ModalItem[] } | null>(null);
+  const [now] = useState(() => Date.now());
+
+  if (bugs.length === 0) {
     return <p className="text-xs text-slate-400 italic">No open bugs</p>;
   }
 
-  const segments = [
-    { key: "fresh", label: "< 7d", count: aging.fresh, color: "bg-emerald-500" },
-    { key: "recent", label: "7-30d", count: aging.recent, color: "bg-green-400" },
-    { key: "aging", label: "30-60d", count: aging.aging, color: "bg-amber-400" },
-    { key: "stale", label: "60-90d", count: aging.stale, color: "bg-orange-500" },
-    { key: "critical", label: "> 90d", count: aging.critical, color: "bg-red-500" },
-  ].filter((s) => s.count > 0);
+  const byBucket: Record<string, LinearBug[]> = {};
+  for (const b of bugs) (byBucket[bucketKey(b, now)] ??= []).push(b);
+
+  const segments = AGING_BUCKETS
+    .map((s) => ({ ...s, bugs: byBucket[s.key] ?? [] }))
+    .filter((s) => s.bugs.length > 0);
 
   return (
     <div>
       <div className="flex h-3 rounded-full overflow-hidden gap-px">
         {segments.map((s) => (
-          <div
+          <button
             key={s.key}
-            className={`${s.color} transition-all`}
-            style={{ width: `${(s.count / aging.total) * 100}%` }}
-            title={`${s.label}: ${s.count}`}
+            type="button"
+            onClick={() => setModal({ label: `Pre-Prod Bug Aging — ${s.label}`, color: s.hex, items: bugsToItems(s.bugs) })}
+            className={`${s.color} transition-all hover:opacity-80 cursor-pointer`}
+            style={{ width: `${(s.bugs.length / bugs.length) * 100}%` }}
+            title={`${s.label}: ${s.bugs.length} — click for tickets`}
+            aria-label={`${s.label}: ${s.bugs.length} bugs`}
           />
         ))}
       </div>
       <div className="flex justify-between mt-1.5">
         {segments.map((s) => (
-          <span key={s.key} className="text-[10px] text-slate-400 dark:text-slate-500">
-            {s.label}: {s.count}
-          </span>
+          <button
+            key={s.key}
+            type="button"
+            onClick={() => setModal({ label: `Pre-Prod Bug Aging — ${s.label}`, color: s.hex, items: bugsToItems(s.bugs) })}
+            className="text-[10px] text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:underline cursor-pointer"
+          >
+            {s.label}: {s.bugs.length}
+          </button>
         ))}
       </div>
+      {modal && (
+        <DetailModal title={modal.label} color={modal.color} items={modal.items} onClose={() => setModal(null)} />
+      )}
     </div>
   );
 }

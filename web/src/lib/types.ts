@@ -5,15 +5,17 @@ export interface LinearBug {
   teamKey: string;
   vertical: string;
   subteam: string;
-  type: "regression" | "progression" | "unknown";
+  type: "regression" | "progression" | "legacy" | "thirdParty" | "unknown";
   environment: string;
   severity: string;
+  priority: number;
   status: string;
   stateType: "triage" | "backlog" | "unstarted" | "started" | "completed" | "canceled";
   createdAt: string;
   resolvedAt?: string;
   url: string;
   releaseBlocker: boolean;
+  projectId?: string;
 }
 
 export interface TeamStats {
@@ -34,6 +36,26 @@ export interface VerticalStats {
   subteams: Record<string, TeamStats>;
 }
 
+export interface LinearProject {
+  id: string;
+  name: string;
+  state: string;
+  progress: number; // 0–1
+  startDate?: string;
+  targetDate?: string;
+  lead?: string;
+  health?: string;
+  verticals: string[];
+  url: string;
+}
+
+export type IncidentCategory =
+  | "progression"
+  | "regression"
+  | "thirdParty"
+  | "infrastructure"
+  | "unknown";
+
 export interface IncidentRecord {
   id: string;
   name: string;
@@ -45,6 +67,7 @@ export interface IncidentRecord {
   incidentType?: string;
   url: string;
   linearKey?: string;
+  category: IncidentCategory;
 }
 
 export interface QaseTestRun {
@@ -138,7 +161,11 @@ export interface DashboardData {
 
 // ── Trend types ──
 
-export type RangePreset = "7d" | "14d" | "30d" | "quarter" | "cycle";
+export type RangePreset = "14d" | "30d" | "quarter" | "cycle";
+
+// Environment scope for the dashboard. "all" = every bug; otherwise only bugs
+// whose classified environment matches are kept (see classifyEnvironment).
+export type EnvFilter = "all" | "Production" | "Staging" | "Development" | "Dogfood";
 
 export interface CycleDates {
   currentStart: string;
@@ -171,7 +198,9 @@ export interface VerticalTrend {
   open: Delta;
   regressions: Delta;
   progressions: Delta;
+  prodEscaped: Delta;
   incidents: Delta;
+  incidentRecords: IncidentRecord[];
   classification: {
     regressions: Delta;
     progressions: Delta;
@@ -291,6 +320,7 @@ export interface ExecSummary {
   pipelineRegressionsByVertical: Array<{ vertical: string; regressions: number; total: number; rate: number }>;
   preProdBugFlow: { created: number; closed: number; delta: number; byVertical: BugFlowRow[] };
   preProdBugAging: BugAgingBuckets;
+  preProdBugAgingList: LinearBug[];
   automationHealth: { coverage: number; passRate: number };
   serviceHealth: ServiceHealth | null;
   kr1ProdDefects: OkrVerticalComparison;

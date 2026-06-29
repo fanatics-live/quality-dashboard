@@ -10,6 +10,8 @@ import { DetailModal, bugsToItems } from "./detail-modal";
 const TYPE_COLORS: Record<string, string> = {
   regression: "#dc2626",
   progression: "#2563eb",
+  legacy: "#9333ea",
+  thirdParty: "#0891b2",
   unknown: "#9ca3af",
 };
 
@@ -33,6 +35,8 @@ interface BugTypeTrends {
   regression: Delta;
   progression: Delta;
   unknown: Delta;
+  legacy?: Delta;
+  thirdParty?: Delta;
 }
 
 function TrendBadge({ delta }: { delta: Delta }) {
@@ -81,14 +85,14 @@ function TypeRow({ name, value, color, delta, onSelect }: { name: string; value:
   );
 }
 
-type BugTypeKey = "regression" | "progression" | "unknown";
+type BugTypeKey = "regression" | "progression" | "legacy" | "thirdParty" | "unknown";
 
 function TicketModal({ title, color, bugs, onClose }: { title: string; color: string; bugs: LinearBug[]; onClose: () => void }) {
   return <DetailModal title={title} color={color} items={bugsToItems(bugs)} onClose={onClose} />;
 }
 
 export function BugTypeDonut({ byType, bugsByType, trends }: {
-  byType: { regression: number; progression: number; unknown: number };
+  byType: { regression: number; progression: number; legacy: number; thirdParty: number; unknown: number };
   bugsByType?: Record<BugTypeKey, LinearBug[]>;
   trends?: BugTypeTrends;
 }) {
@@ -97,6 +101,8 @@ export function BugTypeDonut({ byType, bugsByType, trends }: {
   const data = [
     { name: "Regression", key: "regression" as const, value: byType.regression },
     { name: "Progression", key: "progression" as const, value: byType.progression },
+    { name: "Legacy", key: "legacy" as const, value: byType.legacy },
+    { name: "3rd Party", key: "thirdParty" as const, value: byType.thirdParty },
     { name: "Unclassified", key: "unknown" as const, value: byType.unknown },
   ].filter((d) => d.value > 0);
 
@@ -104,7 +110,6 @@ export function BugTypeDonut({ byType, bugsByType, trends }: {
     return <p className="text-sm text-slate-400 italic">No data</p>;
   }
 
-  const colors = [TYPE_COLORS.regression, TYPE_COLORS.progression, TYPE_COLORS.unknown];
   const selectedMeta = selected ? data.find((d) => d.key === selected) : null;
 
   return (
@@ -120,19 +125,19 @@ export function BugTypeDonut({ byType, bugsByType, trends }: {
             className="cursor-pointer"
             onClick={(_, i) => setSelected(data[i].key)}
           >
-            {data.map((_, i) => (
-              <Cell key={i} fill={colors[i]} />
+            {data.map((d) => (
+              <Cell key={d.key} fill={TYPE_COLORS[d.key]} />
             ))}
           </Pie>
         </PieChart>
       </ResponsiveContainer>
       <div className="space-y-2">
-        {data.map((d, i) => (
+        {data.map((d) => (
           <TypeRow
             key={d.name}
             name={d.name}
             value={d.value}
-            color={colors[i]}
+            color={TYPE_COLORS[d.key]}
             delta={trends?.[d.key]}
             onSelect={() => setSelected(d.key)}
           />

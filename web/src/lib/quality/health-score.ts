@@ -445,7 +445,7 @@ export function computeExecSummary(
   const pEnd = periodEnd ?? now;
   const createdInPeriod = validBugs;
   const closedInPeriod = validAllBugs.filter((b) =>
-    b.stateType === "completed" && b.resolvedAt && new Date(b.resolvedAt) >= pStart && new Date(b.resolvedAt) <= pEnd,
+    b.resolvedAt && new Date(b.resolvedAt) >= pStart && new Date(b.resolvedAt) <= pEnd,
   );
 
   const flowVerticals = new Set<string>();
@@ -501,7 +501,7 @@ export function computeExecSummary(
 
   const ppCreated = nonProdBugs;
   const ppClosed = nonProdAll.filter((b) =>
-    b.stateType === "completed" && b.resolvedAt && new Date(b.resolvedAt) >= pStart && new Date(b.resolvedAt) <= pEnd,
+    b.resolvedAt && new Date(b.resolvedAt) >= pStart && new Date(b.resolvedAt) <= pEnd,
   );
   const ppFlowVerts = new Set<string>();
   const ppCreatedByV: Record<string, number> = {};
@@ -514,6 +514,7 @@ export function computeExecSummary(
   const preProdBugFlow = { created: ppCreated.length, closed: ppClosed.length, delta: ppCreated.length - ppClosed.length, byVertical: ppByVerticalFlow };
 
   const preProdBugAging = computeBugAging(nonProdBugs, now);
+  const preProdBugAgingList = nonProdBugs.filter(isOpen);
 
   const automationHealth = { coverage: automation.coveragePercent, passRate: automation.averagePassRate };
 
@@ -537,6 +538,7 @@ export function computeExecSummary(
     pipelineRegressionsByVertical,
     preProdBugFlow,
     preProdBugAging,
+    preProdBugAgingList,
     automationHealth,
     serviceHealth,
     kr1ProdDefects: computeKr1ProdDefects(allBugs),

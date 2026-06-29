@@ -61,6 +61,7 @@ describe("computeIncidentSeverityScore", () => {
       status: "closed",
       createdAt: daysAgo(2),
       url: "https://app.incident.io/x",
+      category: "unknown",
     };
   }
 

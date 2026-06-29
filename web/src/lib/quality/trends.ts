@@ -12,7 +12,6 @@ import type {
 import { isOpen, isValidBug, isClassificationBug } from "../integrations/linear";
 
 const RANGE_DAYS: Record<string, number> = {
-  "7d": 7,
   "14d": 14,
   "30d": 30,
   quarter: 90,
@@ -239,7 +238,13 @@ export function computeTrends(
         vp.filter((b) => b.type === "progression").length,
         true,
       ),
+      prodEscaped: makeDelta(
+        vcClass.filter((b) => b.environment === "Production").length,
+        vpClass.filter((b) => b.environment === "Production").length,
+        true,
+      ),
       incidents: makeDelta(vci.length, vpi.length, true),
+      incidentRecords: vci,
       classification: {
         regressions: vClassDelta("regression"),
         progressions: vClassDelta("progression"),

@@ -4,13 +4,13 @@ import type { RangePreset } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
-const VALID_RANGES = new Set(["7d", "14d", "30d", "quarter", "cycle"]);
+const VALID_RANGES = new Set(["14d", "30d", "quarter", "cycle"]);
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const force = url.searchParams.get("refresh") === "1";
-  const rangeParam = url.searchParams.get("range") ?? "7d";
-  const range: RangePreset = VALID_RANGES.has(rangeParam) ? (rangeParam as RangePreset) : "7d";
+  const rangeParam = url.searchParams.get("range") ?? "14d";
+  const range: RangePreset = VALID_RANGES.has(rangeParam) ? (rangeParam as RangePreset) : "14d";
 
   if (force) invalidateCache();
 
