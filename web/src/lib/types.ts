@@ -334,7 +334,7 @@ export interface OkrVerticalComparison {
   q1Total: number;
   q2Total: number;
   changePercent: number | null;
-  byVertical: Array<{ vertical: string; q1: number; q2: number; changePercent: number | null }>;
+  byVertical: Array<{ vertical: string; q1: number; q2: number; changePercent: number | null; q2Bugs: LinearBug[] }>;
 }
 
 export interface VerticalSummary {

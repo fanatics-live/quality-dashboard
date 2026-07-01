@@ -332,25 +332,26 @@ function pctChange(prev: number, curr: number): number | null {
 function computeOkrVerticalComparison(allBugs: LinearBug[], predicate: (b: LinearBug) => boolean): OkrVerticalComparison {
   const matched = allBugs.filter((b) => isValidBug(b) && b.stateType !== "triage" && predicate(b));
 
-  const byV: Record<string, { q1: number; q2: number }> = {};
+  const byV: Record<string, { q1: number; q2: number; q2Bugs: LinearBug[] }> = {};
   let q1Total = 0;
   let q2Total = 0;
 
   for (const b of matched) {
     if (OKR_EXCLUDED_VERTICALS.has(b.vertical.toLowerCase())) continue;
     const created = new Date(b.createdAt);
-    const entry = (byV[b.vertical] ??= { q1: 0, q2: 0 });
+    const entry = (byV[b.vertical] ??= { q1: 0, q2: 0, q2Bugs: [] });
     if (created >= OKR_Q1_START && created < OKR_Q2_START) {
       entry.q1++;
       q1Total++;
     } else if (created >= OKR_Q2_START && created < OKR_Q2_END) {
       entry.q2++;
       q2Total++;
+      entry.q2Bugs.push(b);
     }
   }
 
   const byVertical = Object.entries(byV)
-    .map(([vertical, { q1, q2 }]) => ({ vertical, q1, q2, changePercent: pctChange(q1, q2) }))
+    .map(([vertical, { q1, q2, q2Bugs }]) => ({ vertical, q1, q2, changePercent: pctChange(q1, q2), q2Bugs }))
     .filter((r) => r.q1 > 0 || r.q2 > 0)
     .sort((a, b) => b.q1 - a.q1 || b.q2 - a.q2);
 
